@@ -1,5 +1,6 @@
 #pragma once
 #include <Siv3D.hpp>
+#include <random>
 
 enum State
 {

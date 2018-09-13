@@ -4,9 +4,9 @@ class GUI_Button
 {
 private:
 	String print_string;
-	bool pressed;
 	Rect rect_button;
 public:
+	bool pressed = false;
 	void init(int x, int y, int w, int h, String str);
 	void draw_button(Font font);
 };

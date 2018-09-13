@@ -14,7 +14,7 @@ public:
 	bool before_over = false;
 	bool before_select = false;
 	void init(int _posx, int _posy);
-	void draw(Font font, bool selecting, AgentObject  * agent);
-	void update(Font font, bool selecting, AgentObject * agent);
+	void draw(Font font, AgentObject  * agent);
+	void update(Font font, AgentObject * agent);
 };
 

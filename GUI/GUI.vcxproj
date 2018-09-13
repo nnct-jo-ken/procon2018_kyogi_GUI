@@ -160,12 +160,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AgentObject.cpp" />
-    <ClCompile Include="GUI_Button.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="TileObject.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <ItemGroup>
@@ -278,11 +272,14 @@
     <Font Include="Example\YomogiFont.ttf" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\server\server\Procon29Game.h" />
-    <ClInclude Include="AgentObject.h" />
-    <ClInclude Include="GUI_Button.h" />
-    <ClInclude Include="Main.h" />
-    <ClInclude Include="TileObject.h" />
+    <ClCompile Include="..\..\GUI2\GUI2\Agent.cpp" />
+    <ClCompile Include="..\..\GUI2\GUI2\Main.cpp" />
+    <ClCompile Include="..\..\GUI2\GUI2\Tile.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\GUI2\GUI2\Agent.h" />
+    <ClInclude Include="..\..\GUI2\GUI2\Main.h" />
+    <ClInclude Include="..\..\GUI2\GUI2\Tile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

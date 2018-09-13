@@ -272,14 +272,14 @@
     <Font Include="Example\YomogiFont.ttf" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\GUI2\GUI2\Agent.cpp" />
-    <ClCompile Include="..\..\GUI2\GUI2\Main.cpp" />
-    <ClCompile Include="..\..\GUI2\GUI2\Tile.cpp" />
+    <ClInclude Include="Agent.h" />
+    <ClInclude Include="Main.h" />
+    <ClInclude Include="Tile.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\GUI2\GUI2\Agent.h" />
-    <ClInclude Include="..\..\GUI2\GUI2\Main.h" />
-    <ClInclude Include="..\..\GUI2\GUI2\Tile.h" />
+    <ClCompile Include="Agent.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Tile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

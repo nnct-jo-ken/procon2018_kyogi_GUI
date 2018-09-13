@@ -1,9 +1,13 @@
 #pragma once
-
-#include <iostream>
-#include <queue>
 #include <Siv3D.hpp>
-#include <Procon29Game.h>
 
-const int margin = 50;
-const int tile_size = 40;
+enum State
+{
+	NEUTRAL, TEAM1, TEAM2
+};
+
+enum StepState
+{
+	MOVE, DELETE, STAY
+};
+

@@ -275,12 +275,14 @@
     <ClInclude Include="Agent.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="rand_board.h" />
+    <ClInclude Include="tcp.h" />
     <ClInclude Include="Tile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Agent.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="rand_board.cpp" />
+    <ClCompile Include="tcp.cpp" />
     <ClCompile Include="Tile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

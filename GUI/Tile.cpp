@@ -19,9 +19,9 @@ void Tile::draw(Font font) {
 		rect.draw(Palette::White);
 	}
 
-	rect.drawFrame(1, 1, Palette::Black);
+	rect.drawFrame(1, 1, Palette::Gray);
 
-	font(score).drawCenter(x * 40 + 50 + 20, y * 40 + 50 + 20, Palette::Black);
+	font(score).drawCenter(x * 40 + 50 + 20, y * 40 + 50 + 20, Palette::Gray);
 }
 
 void Tile::update(State s_) {

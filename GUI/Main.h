@@ -1,6 +1,10 @@
+#pragma comment(lib, "wsock32.lib")
+
 #pragma once
 #include <Siv3D.hpp>
 #include <random>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
 enum State
 {
@@ -9,6 +13,6 @@ enum State
 
 enum StepState
 {
-	MOVE, DELETE, STAY
+	MOVE, REMOVE, STAY
 };
 

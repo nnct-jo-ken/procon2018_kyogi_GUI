@@ -13,7 +13,9 @@ public:
 	int x = 0;
 	int y = 0;
 	bool is_remove = false;
+	bool is_ai = false;
 	Point nStep = Point(0, 0);
+	Point aiStep = Point(0, 0);
 	State state = NEUTRAL;
 	StepState stepState = STAY;
 	Circle circle;

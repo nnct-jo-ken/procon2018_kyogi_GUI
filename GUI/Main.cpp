@@ -1,23 +1,34 @@
 #pragma once
 #include<stdlib.h>
 #include<time.h>
+#include<thread>
+#include<string>
 
 #include "Main.h"
 #include "Tile.h"
 #include "Agent.h"
 #include "rand_board.h"
+#include "tcp.h"
 
 
 void init(int, int, int);
 void updateField(Font);
 void operateAgent();
 void createBoard();
+void thread_tcp();
+void to_charArray(std::string, char[]);
+void bufftoAgent(char[], State);
+void setAI(State);
+std::string toBuff_score();
+std::string toBuff_state();
+
 
 int row = 12;
 int column = 12;
 int turn = 60;
 int a = 5;
 bool inMenu = true;
+bool ready = false;
 Tile tile[12][12];
 Agent agent[4];
 
@@ -27,7 +38,9 @@ void Main()
 	Graphics::SetBackground(Palette::White);
 	Window::SetTitle(L"Procon29 - GUI - version2");
 	Window::Resize(900, 600);
-	Window::SetStyle(WindowStyle::Sizeable);
+	System::SetExitEvent(WindowEvent::Manual);
+
+	std::thread tThread1(thread_tcp);
 
 	const Font font(15);
 
@@ -36,24 +49,38 @@ void Main()
 	gui.add(L"auto", GUIButton::Create(L"自動生成"));
 	gui.add(L"qr", GUIButton::Create(L"QRコードから"));
 
-
-	// 盤面の初期化　削除予定
 	while (System::Update())
 	{
 		if (inMenu) {
 			if (gui.button(L"auto").pushed) {
 				createBoard();
+				setAI(TEAM1);
 				gui.hide();
 				inMenu = false;
+				ready = true;
 			}
 		}
 		else {
 			updateField(font);
-			createBoard();
 			if (Input::MouseR.clicked) {
-				inMenu = true;
-				gui.show();
 			}
+		}
+
+		// xボタンを押したときの処理
+		if (System::GetPreviousEvent() & WindowEvent::CloseButton)
+		{
+			tThread1.detach();
+			System::Exit();
+		}
+	}
+}
+
+// AIのチームを決める
+// init後にMain関数内で手動で呼び出す
+void setAI(State s) {
+	for (int i = 0; i < 4; i++) {
+		if (agent[i].state == s) {
+			agent[i].is_ai = true;
 		}
 	}
 }
@@ -113,6 +140,8 @@ void operateAgent() {
 
 }
 
+// 盤面の自動生成をする
+// initを含む
 void createBoard() {
 	// row, columnの決定（ランダム）
 	std::random_device rnddev;     // 非決定的な乱数生成器を生成
@@ -120,8 +149,8 @@ void createBoard() {
 	std::uniform_real_distribution<> rand(8, 12);        // [0, 99] 範囲の一様乱数
 
 	int __row, __column;
-	__row = rand(mt);
-	__column = rand(mt);
+	__row = (int)rand(mt);
+	__column = (int)rand(mt);
 
 	int boardScore[12][12];
 	init::rand_board(boardScore, __row, __column);
@@ -132,6 +161,155 @@ void createBoard() {
 			tile[i][j].score = boardScore[i][j];
 		}
 	}
+}
 
-	Println(L"column:", __column, L", row:", __row);
+// 通信用thread
+// １クライアントにつき１スレッド
+void thread_tcp() {
+	WSADATA wsaData;
+	SOCKET sock0;
+	SOCKET sock;
+	struct sockaddr_in addr;
+	int len;
+	struct sockaddr_in client;
+
+	char buff1[512];
+	char buff2[512];
+	char buff[32];
+
+	// winsock2の初期化
+	WSAStartup(MAKEWORD(2, 0), &wsaData);
+
+	// ソケットの作成
+	sock0 = socket(AF_INET, SOCK_STREAM, 0);
+
+	// ソケットの設定
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(12345);
+	addr.sin_addr.S_un.S_addr = INADDR_ANY;
+	bind(sock0, (struct sockaddr *)&addr, sizeof(addr));
+
+	// 盤面の生成が終わるまで待つ
+	while (!ready);
+
+	// 接続を待てる状態にする
+	listen(sock0, 5);
+	len = sizeof(client);
+	sock = accept(sock0, (struct sockaddr *)&client, &len);
+
+	to_charArray(toBuff_score(), buff1);
+	to_charArray(toBuff_state(), buff2);
+	tcp::Tsend(buff1, buff2, sock);
+	
+	tcp::Trecv(buff, sock);
+	bufftoAgent(buff, TEAM1);
+
+
+	// セッションを終了
+	closesocket(sock);
+	// winsock2の終了処理
+	WSACleanup();
+}
+
+std::string toBuff_score() {
+	std::string str = "";
+	// 縦横のサイズ
+	str += std::to_string(column);	str += ' ';
+	str += std::to_string(row);		str += ':';
+	// 各タイルの得点
+	for (int y = 0; y < column; y++) {
+		for (int x = 0; x < row; x++) {
+			str += std::to_string(tile[x][y].score);
+			if (x == row - 1) {
+				str += ':';
+			}
+			else {
+				str += ' ';
+			}
+		}
+	}
+
+	// 各エージェントの位置
+	for (int i = 0; i < 4; i++) {
+		str += std::to_string(agent[i].x + 1);
+		str += ' ';
+		str += std::to_string(agent[i].y + 1);
+		str += ':';
+	}
+
+	str += '\0';
+	return str;
+}
+
+std::string toBuff_state() {
+	std::string str = "";
+	// 残りターン数
+	str += std::to_string(turn);	str += ':';
+	// 各タイルの状態
+	for (int y = 0; y < column; y++) {
+		for (int x = 0; x < row; x++) {
+			str += std::to_string((int)tile[x][y].state);
+			if (x == row - 1) {
+				str += ':';
+			}
+			else {
+				str += ' ';
+			}
+		}
+	}
+
+	// 各エージェントの状態
+	for (int i = 0; i < 4; i++) {
+		str += std::to_string((int)agent[i].state);
+		str += ':';
+	}
+
+	str += '\0';
+	return str;
+}
+
+void to_charArray(std::string str, char buff[]) {
+	int i = 0;
+	while (true) {
+		buff[i] = str[i];
+		if (str[i] == '\0') {
+			break;
+		}
+		i++;
+	}
+}
+
+void bufftoAgent(char buff[], State team) {
+	int data[8];
+	std::string str = "";
+	int index = 0;
+	int x = 0;
+	while (x < 8) {
+		if (buff[index] == ' ' || buff[index] == ':') {
+			data[x] = std::stoi(str);
+			x++;
+			str = "";
+		}
+		else {
+			str += buff[index];
+		}
+		index++;
+	}
+
+	for (int i = 0; i < 4; i++) {
+		if (agent[i].state == team) {
+			if (data[i * 2] == 0 && data[i * 2 + 1] == 0) {
+				continue;
+			}
+			if (agent[i].x + data[i * 2] < 0 || agent[i].x + data[i * 2] >= row) {
+				continue;
+			}
+			if (agent[i].y + data[i * 2 + 1] < 0 || agent[i].y + data[i * 2 + 1] >= column) {
+				continue;
+			}
+			agent[i].stepState = MOVE;
+			agent[i].nStep = Point(data[i * 2], data[i * 2 + 1]);
+			agent[i].aiStep = Point(data[i * 2], data[i * 2 + 1]);
+		}
+	}
 }

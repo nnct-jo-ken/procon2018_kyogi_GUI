@@ -47,9 +47,9 @@ void Agent::operate(Tile tile[12][12], int row, int column) {
 		switch (stepState)
 		{
 		case MOVE:
-			stepState = DELETE;
+			stepState = REMOVE;
 			break;
-		case DELETE:
+		case REMOVE:
 			stepState = STAY;
 			break;
 		case STAY:
@@ -65,11 +65,13 @@ void Agent::drawStep() {
 	case MOVE:
 		c = Palette::Black;
 		break;
-	case DELETE:
+	case REMOVE:
 		c = Palette::Red;
 		break;
 	}
 
 	Line(circle.center, nStep * 40 + circle.center).drawArrow(2, Vec2(8, 8), c);
-
+	if (is_ai) {
+		Line(circle.center, aiStep * 30 + circle.center).drawArrow(2, Vec2(8, 8), Palette::Purple);
+	}
 }

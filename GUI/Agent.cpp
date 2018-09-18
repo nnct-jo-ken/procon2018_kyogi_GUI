@@ -5,7 +5,7 @@ void Agent::init(int x_, int y_, State s_) {
 	x = x_;
 	y = y_;
 	state = s_;
-	circle = Circle(x * 40 + 50 + 20, y * 40 + 50 + 20, 15);
+	circle = Circle(x * 40 + margin_x + 20, y * 40 + margin_y + 20, 15);
 }
 
 void Agent::draw() {
@@ -74,4 +74,8 @@ void Agent::drawStep() {
 	if (is_ai) {
 		Line(circle.center, aiStep * 30 + circle.center).drawArrow(2, Vec2(8, 8), Palette::Purple);
 	}
+}
+
+void Agent::update() {
+	circle = Circle(x * 40 + margin_x + 20, y * 40 + margin_y + 20, 15);
 }

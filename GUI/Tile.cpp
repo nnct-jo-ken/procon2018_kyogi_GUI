@@ -5,15 +5,15 @@ void Tile::init(int x_, int y_, int score_) {
 	x = x_;
 	y = y_;
 	score = score_;
-	rect = Rect(x * 40 + 50, y * 40 + 50, 40);
+	rect = Rect(x * 40 + margin_x, y * 40 + margin_y, 40);
 }
 
 void Tile::draw(Font font) {
 	if (state == TEAM1) {
-		rect.draw(Palette::Orange);
+		rect.draw(Palette::Skyblue);
 	}
 	else if (state == TEAM2) {
-		rect.draw(Palette::Skyblue);
+		rect.draw(Palette::Orange);
 	}
 	else {
 		rect.draw(Palette::White);
@@ -21,7 +21,7 @@ void Tile::draw(Font font) {
 
 	rect.drawFrame(1, 1, Palette::Gray);
 
-	font(score).drawCenter(x * 40 + 50 + 20, y * 40 + 50 + 20, Palette::Gray);
+	font(score).drawCenter(x * 40 + margin_x + 20, y * 40 + margin_y + 20, Palette::Gray);
 }
 
 void Tile::update(State s_) {

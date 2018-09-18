@@ -19,6 +19,8 @@ void thread_tcp();
 void to_charArray(std::string, char[]);
 void bufftoAgent(char[], State);
 void setAI(State);
+void displayInfo(Font);
+void transitionTurn();
 std::string toBuff_score();
 std::string toBuff_state();
 
@@ -62,8 +64,7 @@ void Main()
 		}
 		else {
 			updateField(font);
-			if (Input::MouseR.clicked) {
-			}
+			displayInfo(font);
 		}
 
 		// xボタンを押したときの処理
@@ -103,6 +104,11 @@ void init(int row_, int column_, int turn_) {
 	agent[1].init(row_ - x - 1, column_ - y - 1, TEAM1);
 	agent[2].init(x, column_ - y - 1, TEAM2);
 	agent[3].init(row_ - x - 1, y, TEAM2);
+
+	for (int i = 0; i < 4; i++) {
+		tile[agent[i].x][agent[i].y].state = agent[i].state;
+	}
+
 }
 
 // 盤面更新(描画 & 更新)
@@ -116,7 +122,6 @@ void updateField(Font font) {
 	for (int i = 0; i < 4; i++) {
 		agent[i].draw();
 	}
-
 	operateAgent();
 }
 
@@ -312,4 +317,113 @@ void bufftoAgent(char buff[], State team) {
 			agent[i].aiStep = Point(data[i * 2], data[i * 2 + 1]);
 		}
 	}
+}
+
+// ゲームの情報を描画する
+void displayInfo(Font font) {
+	int infox = tile[row - 1][0].rect.x + 100;
+	font(L"残り", turn, L"ターン").draw(infox, margin_y, Palette::Black);
+	Rect button(infox, margin_y + 50, 130, 30);
+	button.drawFrame(1, 1, Palette::Black);
+	if (button.mouseOver) {
+		button.draw(Color(200, 200, 200));
+	}
+	if (button.leftPressed) {
+		button.draw(Color(150, 150, 150));
+	}
+	if (button.leftClicked) {
+		transitionTurn();
+	}
+	font(L"次のターンへ").draw(infox, margin_y + 50, Palette::Black);
+}
+
+// ターン推移の関数
+// displayInfo内で呼び出す
+void transitionTurn() {
+
+
+	// 移動先が違うチームの場合
+	for (int i = 0; i < 4; i++) {
+		if (agent[i].stepState == MOVE) {
+			State s = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state;
+			if (s != agent[i].state && s != NEUTRAL) {
+				agent[i].stepState = REMOVE;
+			}
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		if (agent[i].stepState == REMOVE) {
+			State s = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state;
+			if (agent[i].state != s && s != NEUTRAL) {
+				agent[i].stepState = STAY;
+			}
+			agent[i].deletePoint = agent[i].nStep;
+			agent[i].nStep = Point(0, 0);
+		}
+		if (agent[i].stepState == STAY) {
+			agent[i].nStep = Point(0, 0);
+		}
+	}
+
+	// Moveのエージェントから判定をはじめる
+	for (int k = 0; k < 3; k++) {
+		for (int i = 0; i < 4; i++) {
+			if (agent[i].stepState == MOVE) {
+				for (int j = 0; j < 4; j++) {
+					if (j == i) { continue; }
+					if (agent[i].x + agent[i].nStep.x == agent[j].x + agent[j].nStep.x &&
+						agent[i].y + agent[i].nStep.y == agent[j].y + agent[j].nStep.y) {
+						agent[i].stepState = STAY;
+						agent[i].nStep = Point(0, 0);
+						if (agent[j].stepState != REMOVE) {
+							agent[j].stepState = STAY;
+							agent[j].nStep = Point(0, 0);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Removeのエージェントの判定
+	for (int i = 0; i < 3; i++) {
+		if (agent[i].stepState == REMOVE) {
+			for (int j = i + 1; j < 4; j++) {
+				if (agent[i].deletePoint == agent[j].nStep) {
+					agent[i].stepState = STAY;
+				}
+				if (agent[j].stepState == REMOVE) {
+					if (agent[i].x + agent[i].deletePoint.x == agent[j].x + agent[j].deletePoint.x &&
+						agent[i].y + agent[i].deletePoint.y == agent[j].y + agent[j].deletePoint.y) {
+						agent[i].stepState = STAY;
+						agent[j].stepState = STAY;
+					}
+				} else {
+					if (agent[i].x + agent[i].deletePoint.x == agent[j].x + agent[j].nStep.x &&
+						agent[i].y + agent[i].deletePoint.y == agent[j].y + agent[j].nStep.y) {
+						agent[i].stepState = STAY;
+					}
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		if (agent[i].stepState == REMOVE) {
+			tile[agent[i].x + agent[i].deletePoint.x][agent[i].y + agent[i].deletePoint.y].state = NEUTRAL;
+		}
+		if (agent[i].stepState == MOVE) {
+			agent[i].x += agent[i].nStep.x;
+			agent[i].y += agent[i].nStep.y;
+			tile[agent[i].x][agent[i].y].state = agent[i].state;
+		}
+		agent[i].nStep = Point(0, 0);
+		agent[i].deletePoint = Point(0, 0);
+		agent[i].aiStep = Point(0, 0);
+		agent[i].stepState = STAY;
+		agent[i].update();
+	}
+
+	turn--;
 }

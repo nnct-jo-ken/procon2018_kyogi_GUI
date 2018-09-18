@@ -176,6 +176,7 @@ void thread_tcp() {
 	SOCKET sock;
 	struct sockaddr_in addr;
 	int len;
+	int flag = turn;
 	struct sockaddr_in client;
 
 	char buff1[512];
@@ -209,6 +210,7 @@ void thread_tcp() {
 
 		tcp::Trecv(buff, sock);
 		bufftoAgent(buff, TEAM1);
+		while (turn == flag);
 	}
 
 	// セッションを終了

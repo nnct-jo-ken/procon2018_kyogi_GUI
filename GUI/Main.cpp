@@ -362,8 +362,7 @@ void transitionTurn() {
 
 	for (int i = 0; i < 4; i++) {
 		if (agent[i].stepState == REMOVE) {
-			State s = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state;
-			if (agent[i].state != s && s != NEUTRAL) {
+			if (tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state == NEUTRAL) {
 				agent[i].stepState = STAY;
 			}
 			agent[i].deletePoint = agent[i].nStep;
@@ -424,6 +423,9 @@ void transitionTurn() {
 		if (agent[i].stepState == MOVE) {
 			agent[i].x += agent[i].nStep.x;
 			agent[i].y += agent[i].nStep.y;
+			tile[agent[i].x][agent[i].y].state = agent[i].state;
+		}
+		if (agent[i].stepState == STAY) {
 			tile[agent[i].x][agent[i].y].state = agent[i].state;
 		}
 		agent[i].nStep = Point(0, 0);

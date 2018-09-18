@@ -211,6 +211,7 @@ void thread_tcp() {
 		tcp::Trecv(buff, sock);
 		bufftoAgent(buff, TEAM1);
 		while (turn == flag);
+		flag = turn;
 	}
 
 	// セッションを終了

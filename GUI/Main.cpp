@@ -202,13 +202,14 @@ void thread_tcp() {
 	len = sizeof(client);
 	sock = accept(sock0, (struct sockaddr *)&client, &len);
 
-	to_charArray(toBuff_score(), buff1);
-	to_charArray(toBuff_state(), buff2);
-	tcp::Tsend(buff1, buff2, sock);
-	
-	tcp::Trecv(buff, sock);
-	bufftoAgent(buff, TEAM1);
+	while (turn > 1) {
+		to_charArray(toBuff_score(), buff1);
+		to_charArray(toBuff_state(), buff2);
+		tcp::Tsend(buff1, buff2, sock);
 
+		tcp::Trecv(buff, sock);
+		bufftoAgent(buff, TEAM1);
+	}
 
 	// セッションを終了
 	closesocket(sock);
@@ -285,11 +286,11 @@ void to_charArray(std::string str, char buff[]) {
 }
 
 void bufftoAgent(char buff[], State team) {
-	int data[8];
+	int data[6];
 	std::string str = "";
 	int index = 0;
 	int x = 0;
-	while (x < 8) {
+	while (x < 6) {
 		if (buff[index] == ' ' || buff[index] == ':') {
 			data[x] = std::stoi(str);
 			x++;
@@ -301,21 +302,28 @@ void bufftoAgent(char buff[], State team) {
 		index++;
 	}
 
+	int y = 0;
 	for (int i = 0; i < 4; i++) {
 		if (agent[i].state == team) {
-			if (data[i * 2] == 0 && data[i * 2 + 1] == 0) {
+			if (data[y * 3] == 0 && data[y * 3 + 1] == 0) {
 				continue;
 			}
-			if (agent[i].x + data[i * 2] < 0 || agent[i].x + data[i * 2] >= row) {
+			if (agent[i].x + data[y * 3] < 0 || agent[i].x + data[y * 3] >= row) {
 				continue;
 			}
-			if (agent[i].y + data[i * 2 + 1] < 0 || agent[i].y + data[i * 2 + 1] >= column) {
+			if (agent[i].y + data[y * 3 + 1] < 0 || agent[i].y + data[y * 3 + 1] >= column) {
 				continue;
 			}
-			agent[i].stepState = MOVE;
-			agent[i].nStep = Point(data[i * 2], data[i * 2 + 1]);
-			agent[i].aiStep = Point(data[i * 2], data[i * 2 + 1]);
+			if (data[y * 3 + 2] == 0) {
+				agent[i].stepState = MOVE;
+			}
+			else {
+				agent[i].stepState = REMOVE;
+			}
+			agent[i].nStep = Point(data[y * 3], data[y * 3 + 1]);
+			agent[i].aiStep = Point(data[y * 3], data[y * 3 + 1]);
 		}
+		y++;
 	}
 }
 

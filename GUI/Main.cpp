@@ -21,6 +21,7 @@ void bufftoAgent(char[], State);
 void setAI(State);
 void displayInfo(Font);
 void transitionTurn();
+bool can_act(int, int);
 std::string toBuff_score();
 std::string toBuff_state();
 
@@ -107,6 +108,7 @@ void init(int row_, int column_, int turn_) {
 
 	for (int i = 0; i < 4; i++) {
 		tile[agent[i].x][agent[i].y].state = agent[i].state;
+		agent[i].id = i;
 	}
 
 }
@@ -120,7 +122,7 @@ void updateField(Font font) {
 	}
 
 	for (int i = 0; i < 4; i++) {
-		agent[i].draw();
+		agent[i].draw(font);
 	}
 	operateAgent();
 }
@@ -156,6 +158,9 @@ void createBoard() {
 	int __row, __column;
 	__row = (int)rand(mt);
 	__column = (int)rand(mt);
+
+	__row = 6;
+	__column = 6;
 
 	int boardScore[12][12];
 	init::rand_board(boardScore, __row, __column);
@@ -203,7 +208,7 @@ void thread_tcp() {
 	len = sizeof(client);
 	sock = accept(sock0, (struct sockaddr *)&client, &len);
 
-	while (turn > 1) {
+	while (turn > 0) {
 		to_charArray(toBuff_score(), buff1);
 		to_charArray(toBuff_state(), buff2);
 		tcp::Tsend(buff1, buff2, sock);
@@ -352,72 +357,50 @@ void displayInfo(Font font) {
 // displayInfo内で呼び出す
 void transitionTurn() {
 
-
-	// 移動先が違うチームの場合
+	// 入力が正しいか判定
+	// REMOVEの間違いはSTAYに
+	// MOVEの間違いはREMOVEに
 	for (int i = 0; i < 4; i++) {
+		State tile_state = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state;
 		if (agent[i].stepState == MOVE) {
-			State s = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state;
-			if (s != agent[i].state && s != NEUTRAL) {
+			if (agent[i].state != tile_state && tile_state != NEUTRAL) {
 				agent[i].stepState = REMOVE;
+			}
+		}
+		if (agent[i].stepState == REMOVE) {
+			agent[i].deletePoint = agent[i].nStep;
+			if (tile_state == NEUTRAL) {
+				agent[i].stepState = STAY;
+				agent[i].nStep = Point(0, 0);
+			}
+		}
+	}
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = i + 1; j < 4; j++) {
+			if (agent[i].getpos() + agent[i].nStep == agent[j].getpos() + agent[j].nStep) {
+				agent[i].stepState = STAY;
+				agent[j].stepState = STAY;
 			}
 		}
 	}
 
 	for (int i = 0; i < 4; i++) {
-		if (agent[i].stepState == REMOVE) {
-			if (tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state == NEUTRAL) {
-				agent[i].stepState = STAY;
-			}
-			agent[i].deletePoint = agent[i].nStep;
-			agent[i].nStep = Point(0, 0);
-		}
 		if (agent[i].stepState == STAY) {
 			agent[i].nStep = Point(0, 0);
 		}
 	}
 
-	// Moveのエージェントから判定をはじめる
-	for (int k = 0; k < 3; k++) {
-		for (int i = 0; i < 4; i++) {
-			if (agent[i].stepState == MOVE) {
-				for (int j = 0; j < 4; j++) {
-					if (j == i) { continue; }
-					if (agent[i].x + agent[i].nStep.x == agent[j].x + agent[j].nStep.x &&
-						agent[i].y + agent[i].nStep.y == agent[j].y + agent[j].nStep.y) {
-						agent[i].stepState = STAY;
-						agent[i].nStep = Point(0, 0);
-						if (agent[j].stepState != REMOVE) {
-							agent[j].stepState = STAY;
-							agent[j].nStep = Point(0, 0);
-						}
-					}
-				}
+	// 判定
+	for (int i = 0; i < 4; i++) {
+		// STAYの場合は確定
+		if (agent[i].stepState != STAY) {
+			if (!can_act(i, i)) {
+				agent[i].stepState = STAY;
 			}
 		}
 	}
 
-	// Removeのエージェントの判定
-	for (int i = 0; i < 3; i++) {
-		if (agent[i].stepState == REMOVE) {
-			for (int j = i + 1; j < 4; j++) {
-				if (agent[i].deletePoint == agent[j].nStep) {
-					agent[i].stepState = STAY;
-				}
-				if (agent[j].stepState == REMOVE) {
-					if (agent[i].x + agent[i].deletePoint.x == agent[j].x + agent[j].deletePoint.x &&
-						agent[i].y + agent[i].deletePoint.y == agent[j].y + agent[j].deletePoint.y) {
-						agent[i].stepState = STAY;
-						agent[j].stepState = STAY;
-					}
-				} else {
-					if (agent[i].x + agent[i].deletePoint.x == agent[j].x + agent[j].nStep.x &&
-						agent[i].y + agent[i].deletePoint.y == agent[j].y + agent[j].nStep.y) {
-						agent[i].stepState = STAY;
-					}
-				}
-			}
-		}
-	}
 
 	for (int i = 0; i < 4; i++) {
 		if (agent[i].stepState == REMOVE) {
@@ -428,9 +411,6 @@ void transitionTurn() {
 			agent[i].y += agent[i].nStep.y;
 			tile[agent[i].x][agent[i].y].state = agent[i].state;
 		}
-		if (agent[i].stepState == STAY) {
-			tile[agent[i].x][agent[i].y].state = agent[i].state;
-		}
 		agent[i].nStep = Point(0, 0);
 		agent[i].deletePoint = Point(0, 0);
 		agent[i].aiStep = Point(0, 0);
@@ -439,4 +419,26 @@ void transitionTurn() {
 	}
 
 	turn--;
+}
+
+bool can_act(int x, int y) {
+	Point pos = agent[x].getpos() + agent[x].nStep;
+	for (int i = 0; i < 4; i++) {
+		if (i == x) { continue; }
+		if (pos == agent[i].getpos()) {
+			if (agent[i].stepState == STAY || agent[i].stepState == REMOVE) {
+				return false;
+			}
+			if (i == y) {
+				if (agent[i].stepState == MOVE && agent[y].stepState == MOVE) {
+					return true;
+				}
+				return false;
+			}
+			if (!can_act(i, x)) {
+				return false;
+			}
+		}
+	}
+	return true;
 }

@@ -8,7 +8,7 @@ void Agent::init(int x_, int y_, State s_) {
 	circle = Circle(x * 40 + margin_x + 20, y * 40 + margin_y + 20, 15);
 }
 
-void Agent::draw() {
+void Agent::draw(Font font) {
 	if (state == TEAM1) {
 		circle.draw(Palette::Skyblue);
 		circle.drawFrame(0, 1, Palette::Black);
@@ -24,6 +24,9 @@ void Agent::draw() {
 	if (stepState != STAY) {
 		drawStep();
 	}
+
+	font(id).drawCenter(x * 40 + margin_x + 18, y * 40 + margin_y + 18, Palette::Black);
+
 }
 
 void Agent::operate(Tile tile[12][12], int row, int column) {
@@ -78,4 +81,8 @@ void Agent::drawStep() {
 
 void Agent::update() {
 	circle = Circle(x * 40 + margin_x + 20, y * 40 + margin_y + 20, 15);
+}
+
+Point Agent::getpos() {
+	return Point(x, y);
 }

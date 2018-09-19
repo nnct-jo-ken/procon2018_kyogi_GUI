@@ -3,6 +3,7 @@
 #include<time.h>
 #include<thread>
 #include<string>
+#include <fstream>
 
 #include "Main.h"
 #include "Tile.h"
@@ -15,12 +16,17 @@ void init(int, int, int);
 void updateField(Font);
 void operateAgent();
 void createBoard();
+void createFromQR();
 void thread_tcp();
 void to_charArray(std::string, char[]);
 void bufftoAgent(char[], State);
 void setAI(State);
 void displayInfo(Font);
 void transitionTurn();
+void stringtoarray(std::string, int[]);
+int tileScore(State);
+int areaScore(State);
+void countAreaScore(int, int);
 bool can_act(int, int);
 std::string toBuff_score();
 std::string toBuff_state();
@@ -34,6 +40,9 @@ bool inMenu = true;
 bool ready = false;
 Tile tile[12][12];
 Agent agent[4];
+//　得点計算用
+bool reach_end = false;
+int area_score = 0;
 
 void Main()
 {
@@ -57,6 +66,13 @@ void Main()
 		if (inMenu) {
 			if (gui.button(L"auto").pushed) {
 				createBoard();
+				setAI(TEAM1);
+				gui.hide();
+				inMenu = false;
+				ready = true;
+			}
+			if (gui.button(L"qr").pushed) {
+				createFromQR();
 				setAI(TEAM1);
 				gui.hide();
 				inMenu = false;
@@ -97,20 +113,6 @@ void init(int row_, int column_, int turn_) {
 			tile[i][j].init(i, j, 1);
 		}
 	}
-
-	srand((unsigned)time(NULL));
-	int x = (rand() % (row_ - 1)) / 2;
-	int y = (rand() % (column_ - 1)) / 2;
-	agent[0].init(x, y, TEAM1);
-	agent[1].init(row_ - x - 1, column_ - y - 1, TEAM1);
-	agent[2].init(x, column_ - y - 1, TEAM2);
-	agent[3].init(row_ - x - 1, y, TEAM2);
-
-	for (int i = 0; i < 4; i++) {
-		tile[agent[i].x][agent[i].y].state = agent[i].state;
-		agent[i].id = i;
-	}
-
 }
 
 // 盤面更新(描画 & 更新)
@@ -153,14 +155,11 @@ void createBoard() {
 	// row, columnの決定（ランダム）
 	std::random_device rnddev;     // 非決定的な乱数生成器を生成
 	std::mt19937 mt(rnddev());     //  メルセンヌ・ツイスタの32ビット版、引数は初期シード値
-	std::uniform_real_distribution<> rand(8, 12);        // [0, 99] 範囲の一様乱数
+	std::uniform_real_distribution<> randmt(8, 12);        // [0, 99] 範囲の一様乱数
 
 	int __row, __column;
-	__row = (int)rand(mt);
-	__column = (int)rand(mt);
-
-	__row = 6;
-	__column = 6;
+	__row = (int)randmt(mt);
+	__column = (int)randmt(mt);
 
 	int boardScore[12][12];
 	init::rand_board(boardScore, __row, __column);
@@ -170,6 +169,64 @@ void createBoard() {
 		for (int j = 0; j < __column; j++) {
 			tile[i][j].score = boardScore[i][j];
 		}
+	}
+
+	srand((unsigned)time(NULL));
+	int x = (rand() % (row - 1)) / 2;
+	int y = (rand() % (column - 1)) / 2;
+	agent[0].init(x, y, TEAM1);
+	agent[1].init(row - x - 1, column - y - 1, TEAM1);
+	agent[2].init(x, column - y - 1, TEAM2);
+	agent[3].init(row - x - 1, y, TEAM2);
+
+	for (int i = 0; i < 4; i++) {
+		tile[agent[i].x][agent[i].y].state = agent[i].state;
+		agent[i].id = i;
+	}
+
+
+}
+
+// 盤面をQRから生成する
+void createFromQR() {
+	std::ifstream shapeinfo("./shape_info.txt");
+	std::string strs[15];
+	int data[15][12];
+	int num = 0;
+
+	if (shapeinfo.fail()) {
+		Println(L"error failed open file");
+		return;
+	}
+
+	while (getline(shapeinfo, strs[num])) {
+		num++;
+	}
+
+	// starsの文字列をint配列に変換
+	for (int i = 0; i < num; i++) {
+		stringtoarray(strs[i], data[i]);
+	}
+
+	// row columnの初期化
+	init(data[0][1], data[0][0], 60);
+	
+	// タイルの得点を代入
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			tile[x][y].score = data[y + 1][x];
+		}
+	}
+
+	// 味方エージェントの位置代入
+	agent[0].init(data[column + 1][1] - 1, data[column + 1][0] - 1, TEAM1);
+	agent[1].init(data[column + 2][1] - 1, data[column + 2][0] - 1, TEAM1);
+	agent[2].init(agent[0].x, column - agent[0].y - 1, TEAM2);
+	agent[3].init(row - agent[0].x - 1, agent[0].y, TEAM2);
+
+	for (int i = 0; i < 4; i++) {
+		tile[agent[i].x][agent[i].y].state = agent[i].state;
+		agent[i].id = i;
 	}
 }
 
@@ -245,9 +302,9 @@ std::string toBuff_score() {
 
 	// 各エージェントの位置
 	for (int i = 0; i < 4; i++) {
-		str += std::to_string(agent[i].x + 1);
+		str += std::to_string(agent[i].x);
 		str += ' ';
-		str += std::to_string(agent[i].y + 1);
+		str += std::to_string(agent[i].y);
 		str += ':';
 	}
 
@@ -441,4 +498,63 @@ bool can_act(int x, int y) {
 		}
 	}
 	return true;
+}
+
+// タイルスコア集計
+int tileScore(State team) {
+	int score = 0;
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			if (tile[x][y].state == team) {
+				score += tile[x][y].score;
+			}
+		}
+	}
+	return score;
+}
+
+// エリアスコア集計
+int areaScore(State team) {
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			tile[x][y].is_sarched = false;
+			if (x == 0 || y == 0 || x == row - 1 || y == column == 0) {
+				tile[x][y].is_end = true;
+			}
+		}
+	}
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			if (tile[x][y].state != team && !tile[x][y].is_sarched) {
+
+			}
+		}
+	}
+
+	return 0;
+}
+
+void countAreaScore(int x, int y) {
+
+}
+
+void stringtoarray(std::string strs, int arr[]) {
+	std::string buf = "";
+	int i = 0;
+	int index = 0;
+	while (true) {
+		if (strs[i] == ' ') {
+			arr[index] = std::stoi(buf);
+			index++;
+			buf = "";
+		}
+		if ((int)strs[i] > 0) {
+			buf += strs[i];
+		}
+		if (strs[i] == 0) {
+			arr[index] = std::stoi(buf);
+			return;
+		}
+		i++;
+	}
 }

@@ -15,5 +15,9 @@ public:
 	int y = 0;
 	State state = NEUTRAL;
 	Rect rect;
+
+	// “¾“_ŒvŽZ
+	bool is_sarched = false;
+	bool is_end = false;
 };
 

@@ -4,6 +4,7 @@
 #include<thread>
 #include<string>
 #include <fstream>
+#include <atomic>
 
 #include "Main.h"
 #include "Tile.h"
@@ -18,26 +19,26 @@ void operateAgent();
 void createBoard();
 void createFromQR();
 void thread_tcp();
+void thread_score();
 void to_charArray(std::string, char[]);
 void bufftoAgent(char[], State);
 void setAI(State);
 void displayInfo(Font);
 void transitionTurn();
 void stringtoarray(std::string, int[]);
+void countAscore(int, int, int*, bool*, State);
 int tileScore(State);
 int areaScore(State);
-void countAreaScore(int, int);
 bool can_act(int, int);
 std::string toBuff_score();
 std::string toBuff_state();
 
-
 int row = 12;
 int column = 12;
-int turn = 60;
 int a = 5;
 bool inMenu = true;
-bool ready = false;
+std::atomic<int> turn = 10;
+std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];
 //　得点計算用
@@ -53,6 +54,7 @@ void Main()
 	System::SetExitEvent(WindowEvent::Manual);
 
 	std::thread tThread1(thread_tcp);
+	std::thread sThread(thread_score);
 
 	const Font font(15);
 
@@ -88,6 +90,7 @@ void Main()
 		if (System::GetPreviousEvent() & WindowEvent::CloseButton)
 		{
 			tThread1.detach();
+			sThread.detach();
 			System::Exit();
 		}
 	}
@@ -157,14 +160,18 @@ void createBoard() {
 	std::mt19937 mt(rnddev());     //  メルセンヌ・ツイスタの32ビット版、引数は初期シード値
 	std::uniform_real_distribution<> randmt(8, 12);        // [0, 99] 範囲の一様乱数
 
-	int __row, __column;
-	__row = (int)randmt(mt);
-	__column = (int)randmt(mt);
+	// row * column >= 80になるまで繰り返す
+
+	int __row = 0, __column = 0;
+	while (__row * __column < 80) {
+		__row = (int)randmt(mt);
+		__column = (int)randmt(mt);
+	}
 
 	int boardScore[12][12];
 	init::rand_board(boardScore, __row, __column);
 
-	init(__row, __column, 60);
+	init(__row, __column, turn);
 	for (int i = 0; i < __row; i++) {
 		for (int j = 0; j < __column; j++) {
 			tile[i][j].score = boardScore[i][j];
@@ -183,8 +190,6 @@ void createBoard() {
 		tile[agent[i].x][agent[i].y].state = agent[i].state;
 		agent[i].id = i;
 	}
-
-
 }
 
 // 盤面をQRから生成する
@@ -265,7 +270,7 @@ void thread_tcp() {
 	len = sizeof(client);
 	sock = accept(sock0, (struct sockaddr *)&client, &len);
 
-	while (turn > 0) {
+	while (turn >= 0) {
 		to_charArray(toBuff_score(), buff1);
 		to_charArray(toBuff_state(), buff2);
 		tcp::Tsend(buff1, buff2, sock);
@@ -500,44 +505,6 @@ bool can_act(int x, int y) {
 	return true;
 }
 
-// タイルスコア集計
-int tileScore(State team) {
-	int score = 0;
-	for (int x = 0; x < row; x++) {
-		for (int y = 0; y < column; y++) {
-			if (tile[x][y].state == team) {
-				score += tile[x][y].score;
-			}
-		}
-	}
-	return score;
-}
-
-// エリアスコア集計
-int areaScore(State team) {
-	for (int x = 0; x < row; x++) {
-		for (int y = 0; y < column; y++) {
-			tile[x][y].is_sarched = false;
-			if (x == 0 || y == 0 || x == row - 1 || y == column == 0) {
-				tile[x][y].is_end = true;
-			}
-		}
-	}
-	for (int x = 0; x < row; x++) {
-		for (int y = 0; y < column; y++) {
-			if (tile[x][y].state != team && !tile[x][y].is_sarched) {
-
-			}
-		}
-	}
-
-	return 0;
-}
-
-void countAreaScore(int x, int y) {
-
-}
-
 void stringtoarray(std::string strs, int arr[]) {
 	std::string buf = "";
 	int i = 0;
@@ -557,4 +524,126 @@ void stringtoarray(std::string strs, int arr[]) {
 		}
 		i++;
 	}
+}
+
+// タイルスコア集計
+int tileScore(State team) {
+	int score = 0;
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			if (tile[x][y].state == team) {
+				score += tile[x][y].score;
+			}
+		}
+	}
+	return score;
+}
+
+// エリアスコア集計
+int areaScore(State team) {
+	int result = 0;
+	// 初期化, 筋の設定
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			tile[x][y].is_searched = false;
+			tile[x][y].is_end = false;
+			if (x == 0 || y == 0 || x == row - 1 || y == column - 1) {
+				tile[x][y].is_end = true;
+			}
+		}
+	}
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			if (tile[x][y].state != team) {
+				if (!tile[x][y].is_searched) {
+					bool _reach_end = false;
+					int sscore = 0;
+					countAscore(x, y, &sscore, &_reach_end, team);
+					if (!_reach_end) {
+						result += sscore;
+					}
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+void countAscore(int x, int y, int* score, bool * _reach_end, State _team) {
+	if (tile[x][y].state == _team || tile[x][y].is_searched) {
+		return;
+	}
+	tile[x][y].is_searched = true;
+	*score += (int)std::abs(tile[x][y].score);
+	if (tile[x][y].is_end) {
+		*_reach_end = true;
+	}
+	if (x > 0) {
+		countAscore(x - 1, y, score, _reach_end, _team);
+	}
+	if (x < row - 1) {
+		countAscore(x + 1, y, score, _reach_end, _team);
+	}
+	if (y > 0) {
+		countAscore(x, y - 1, score, _reach_end, _team);
+	}
+	if (y < column - 1) {
+		countAscore(x, y + 1, score, _reach_end, _team);
+	}
+}
+
+// 接続してきたクライアントに2チーム分の領域ポイント、タイルポイントを送信する
+// 形式："タイルポイント1:領域ポイント1:タイルポイント2:領域ポイント2\0"
+// port：15555
+void thread_score() {
+	WSADATA wsaData;
+	SOCKET sock0;
+	SOCKET sock;
+	int len;
+	struct sockaddr_in addr;
+	struct sockaddr_in client;
+
+	// winsock2の初期化
+	WSAStartup(MAKEWORD(2, 0), &wsaData);
+
+	// ソケットの作成
+	sock0 = socket(AF_INET, SOCK_STREAM, 0);
+
+	// ソケットの設定
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(15555);
+	addr.sin_addr.S_un.S_addr = INADDR_ANY;
+	bind(sock0, (struct sockaddr *)&addr, sizeof(addr));
+
+	// 盤面の生成が終わるまで待つ
+	while (!ready);
+
+	while (turn >= 0) {
+		// 接続を待てる状態にする
+		listen(sock0, 5);
+		len = sizeof(client);
+		sock = accept(sock0, (struct sockaddr *)&client, &len);
+
+		// 送信バッファの作成
+		std::string strs = "";
+		strs += std::to_string(tileScore(TEAM1));
+		strs += ':';
+		strs += std::to_string(areaScore(TEAM1));
+		strs += ':';
+		strs += std::to_string(tileScore(TEAM2));
+		strs += ':';
+		strs += std::to_string(areaScore(TEAM2));
+		strs += '\0';
+		
+		char buff[32];
+		// string -> char[]
+		to_charArray(strs, buff);
+		// 送信
+		send(sock, buff, 32, 0);
+		// セッションを終了
+		closesocket(sock);
+	}
+	// winsock2の終了処理
+	WSACleanup();
 }

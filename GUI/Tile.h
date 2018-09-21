@@ -17,7 +17,7 @@ public:
 	Rect rect;
 
 	// “¾“_ŒvZ
-	bool is_sarched = false;
+	bool is_searched = false;
 	bool is_end = false;
 };
 

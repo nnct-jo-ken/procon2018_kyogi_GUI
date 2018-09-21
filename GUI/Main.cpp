@@ -376,28 +376,27 @@ void bufftoAgent(char buff[], State team) {
 		}
 		index++;
 	}
-
-	int zerone = 0;
-	for (int i = 0; i < 4; i++) {
-		if (agent[i].state == team) {
-			if (data[zerone * 3] == 0 && data[zerone * 3 + 1] == 0) {
-				continue;
-			}
-			if (agent[i].x + data[zerone * 3] < 0 || agent[i].x + data[zerone * 3] >= row) {
-				continue;
-			}
-			if (agent[i].y + data[zerone * 3 + 1] < 0 || agent[i].y + data[zerone * 3 + 1] >= column) {
-				continue;
-			}
-			if (data[zerone * 3 + 2] == 0) {
-				agent[i].stepState = MOVE;
+	
+	int i = 0;
+	if (team == TEAM2)
+		i = 2;
+	for (int j = 0; j < 2; j++) {
+		if (data[j * 3] == 0 || data[j * 3 + 1] == 0) {
+			continue;
+		}
+		if (agent[j + i].x + data[j * 3] < 0 || agent[j + i].x + data[j * 3] >= row ||
+			agent[j + i].y + data[j * 3 + 1] < 0 || agent[j + i].y + data[j * 3 + 1] >= column) {
+			continue;
+		}
+		else {
+			if (data[j * 3 + 2] == 0) {
+				agent[j + i].stepState = MOVE;
 			}
 			else {
-				agent[i].stepState = REMOVE;
+				agent[j + i].stepState = REMOVE;
 			}
-			agent[i].nStep = Point(data[zerone * 3], data[zerone * 3 + 1]);
-			agent[i].aiStep = Point(data[zerone * 3], data[zerone * 3 + 1]);
-			zerone++;
+			agent[j + i].nStep = Point(data[j * 3], data[j * 3 + 1]);
+			agent[j + i].aiStep = Point(data[j * 3], data[j * 3 + 1]);
 		}
 	}
 }

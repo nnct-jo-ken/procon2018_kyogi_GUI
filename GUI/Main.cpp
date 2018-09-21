@@ -37,7 +37,7 @@ int row = 12;
 int column = 12;
 int a = 5;
 bool inMenu = true;
-std::atomic<int> turn = 10;
+std::atomic<int> turn = 100;
 std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];
@@ -62,6 +62,11 @@ void Main()
 	gui.setTitle(L"盤面の生成");
 	gui.add(L"auto", GUIButton::Create(L"自動生成"));
 	gui.add(L"qr", GUIButton::Create(L"QRコードから"));
+
+	// 戻るボタンの情報
+	//std::fstream file;
+	//file.open("undo.dat", std::ios::binary | std::ios::out | std::ios::in);
+
 
 	while (System::Update())
 	{
@@ -372,28 +377,28 @@ void bufftoAgent(char buff[], State team) {
 		index++;
 	}
 
-	int y = 0;
+	int zerone = 0;
 	for (int i = 0; i < 4; i++) {
 		if (agent[i].state == team) {
-			if (data[y * 3] == 0 && data[y * 3 + 1] == 0) {
+			if (data[zerone * 3] == 0 && data[zerone * 3 + 1] == 0) {
 				continue;
 			}
-			if (agent[i].x + data[y * 3] < 0 || agent[i].x + data[y * 3] >= row) {
+			if (agent[i].x + data[zerone * 3] < 0 || agent[i].x + data[zerone * 3] >= row) {
 				continue;
 			}
-			if (agent[i].y + data[y * 3 + 1] < 0 || agent[i].y + data[y * 3 + 1] >= column) {
+			if (agent[i].y + data[zerone * 3 + 1] < 0 || agent[i].y + data[zerone * 3 + 1] >= column) {
 				continue;
 			}
-			if (data[y * 3 + 2] == 0) {
+			if (data[zerone * 3 + 2] == 0) {
 				agent[i].stepState = MOVE;
 			}
 			else {
 				agent[i].stepState = REMOVE;
 			}
-			agent[i].nStep = Point(data[y * 3], data[y * 3 + 1]);
-			agent[i].aiStep = Point(data[y * 3], data[y * 3 + 1]);
+			agent[i].nStep = Point(data[zerone * 3], data[zerone * 3 + 1]);
+			agent[i].aiStep = Point(data[zerone * 3], data[zerone * 3 + 1]);
+			zerone++;
 		}
-		y++;
 	}
 }
 

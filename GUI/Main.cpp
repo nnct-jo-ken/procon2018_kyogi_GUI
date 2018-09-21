@@ -381,7 +381,7 @@ void bufftoAgent(char buff[], State team) {
 	if (team == TEAM2)
 		i = 2;
 	for (int j = 0; j < 2; j++) {
-		if (data[j * 3] == 0 || data[j * 3 + 1] == 0) {
+		if (data[j * 3] == 0 && data[j * 3 + 1] == 0) {
 			continue;
 		}
 		if (agent[j + i].x + data[j * 3] < 0 || agent[j + i].x + data[j * 3] >= row ||

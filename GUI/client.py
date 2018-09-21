@@ -21,7 +21,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as socket1:
 		buff1 = socket1.recv(512)
 		socket1.send(b'end')
 		buff2 = socket1.recv(512)
-		socket1.send(b'end')
 
 		print(buff1)
 		print(buff2)

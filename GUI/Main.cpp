@@ -13,20 +13,21 @@
 #include "tcp.h"
 
 
-void init(int, int, int);
+void init(int, int);
 void updateField(Font);
 void operateAgent();
 void createBoard();
 void createFromQR();
-void thread_tcp();
+void thread_tcp(u_short, State);
 void thread_score();
 void to_charArray(std::string, char[]);
 void bufftoAgent(char[], State);
-void setAI(State);
 void displayInfo(Font);
 void transitionTurn();
 void stringtoarray(std::string, int[]);
 void countAscore(int, int, int*, bool*, State);
+void undo(Texture);
+void redo(Texture);
 int tileScore(State);
 int areaScore(State);
 bool can_act(int, int);
@@ -37,13 +38,18 @@ int row = 12;
 int column = 12;
 int a = 5;
 bool inMenu = true;
-std::atomic<int> turn = 100;
+int all_turn;
+std::atomic<int> turn = 80;
 std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];
 //　得点計算用
 bool reach_end = false;
 int area_score = 0;
+
+// undo redo用 とりあえず120ターン分
+struct command procedure[120];
+int p_pointer = -1;
 
 void Main()
 {
@@ -53,10 +59,13 @@ void Main()
 	Window::Resize(900, 600);
 	System::SetExitEvent(WindowEvent::Manual);
 
-	std::thread tThread1(thread_tcp);
+	std::thread tThread1(thread_tcp, 12345, TEAM1);
+	std::thread tThread2(thread_tcp, 12346, TEAM2);
 	std::thread sThread(thread_score);
 
 	const Font font(15);
+	const Texture undo_png(L"./undo.png");
+	const Texture redo_png(L"./redo.png");
 
 	GUI gui(GUIStyle::Default);
 	gui.setTitle(L"盤面の生成");
@@ -73,54 +82,45 @@ void Main()
 		if (inMenu) {
 			if (gui.button(L"auto").pushed) {
 				createBoard();
-				setAI(TEAM1);
-				gui.hide();
 				inMenu = false;
-				ready = true;
 			}
 			if (gui.button(L"qr").pushed) {
 				createFromQR();
-				setAI(TEAM1);
-				gui.hide();
 				inMenu = false;
+			}
+			if (!inMenu) {
+				gui.hide();
 				ready = true;
 			}
 		}
 		else {
 			updateField(font);
 			displayInfo(font);
+			undo(undo_png);
+			redo(redo_png);
 		}
 
 		// xボタンを押したときの処理
 		if (System::GetPreviousEvent() & WindowEvent::CloseButton)
 		{
 			tThread1.detach();
+			tThread2.detach();
 			sThread.detach();
 			System::Exit();
 		}
 	}
 }
 
-// AIのチームを決める
-// init後にMain関数内で手動で呼び出す
-void setAI(State s) {
-	for (int i = 0; i < 4; i++) {
-		if (agent[i].state == s) {
-			agent[i].is_ai = true;
-		}
-	}
-}
-
 // 盤面初期化
-void init(int row_, int column_, int turn_) {
+void init(int row_, int column_) {
 	row = row_;
 	column = column_;
-	turn = turn_;
 	for (int i = 0; i < 12; i++) {
 		for (int j = 0; j < 12; j++) {
 			tile[i][j].init(i, j, 1);
 		}
 	}
+	all_turn = turn;
 }
 
 // 盤面更新(描画 & 更新)
@@ -176,7 +176,7 @@ void createBoard() {
 	int boardScore[12][12];
 	init::rand_board(boardScore, __row, __column);
 
-	init(__row, __column, turn);
+	init(__row, __column);
 	for (int i = 0; i < __row; i++) {
 		for (int j = 0; j < __column; j++) {
 			tile[i][j].score = boardScore[i][j];
@@ -219,7 +219,7 @@ void createFromQR() {
 	}
 
 	// row columnの初期化
-	init(data[0][1], data[0][0], 60);
+	init(data[0][1], data[0][0]);
 	
 	// タイルの得点を代入
 	for (int x = 0; x < row; x++) {
@@ -242,7 +242,7 @@ void createFromQR() {
 
 // 通信用thread
 // １クライアントにつき１スレッド
-void thread_tcp() {
+void thread_tcp(u_short port, State team) {
 	WSADATA wsaData;
 	SOCKET sock0;
 	SOCKET sock;
@@ -263,7 +263,7 @@ void thread_tcp() {
 
 	// ソケットの設定
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(12345);
+	addr.sin_port = htons(port);
 	addr.sin_addr.S_un.S_addr = INADDR_ANY;
 	bind(sock0, (struct sockaddr *)&addr, sizeof(addr));
 
@@ -281,7 +281,7 @@ void thread_tcp() {
 		tcp::Tsend(buff1, buff2, sock);
 
 		tcp::Trecv(buff, sock);
-		bufftoAgent(buff, TEAM1);
+		bufftoAgent(buff, team);
 		while (turn == flag);
 		flag = turn;
 	}
@@ -413,8 +413,10 @@ void displayInfo(Font font) {
 	if (button.leftPressed) {
 		button.draw(Color(150, 150, 150));
 	}
-	if (button.leftClicked) {
-		transitionTurn();
+	if (turn > 0) {
+		if (button.leftClicked) {
+			transitionTurn();
+		}
 	}
 	font(L"次のターンへ").draw(infox, margin_y + 50, Palette::Black);
 }
@@ -467,6 +469,22 @@ void transitionTurn() {
 		}
 	}
 
+	p_pointer = all_turn - turn;
+	// 構造体をリセット
+	// undo redoのためにコマンドを保存
+	for (int i = 0; i < 4; i++) {
+		procedure[p_pointer].stepState[i] = agent[i].stepState;
+		if (agent[i].stepState == REMOVE) {
+			procedure[p_pointer].nStep[i] = agent[i].deletePoint;
+			procedure[p_pointer].original_state[i] 
+				= tile[agent[i].x + agent[i].deletePoint.x][agent[i].y + agent[i].deletePoint.y].state;
+		}
+		else {
+			procedure[p_pointer].nStep[i] = agent[i].nStep;
+			procedure[p_pointer].original_state[i]
+				= tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].state;
+		}
+	}
 
 	for (int i = 0; i < 4; i++) {
 		if (agent[i].stepState == REMOVE) {
@@ -483,7 +501,6 @@ void transitionTurn() {
 		agent[i].stepState = STAY;
 		agent[i].update();
 	}
-
 	turn--;
 }
 
@@ -650,4 +667,62 @@ void thread_score() {
 	}
 	// winsock2の終了処理
 	WSACleanup();
+}
+
+void undo(Texture undo_png) {
+	Rect rect = Rect(50, 10, 40, 40);
+	rect(undo_png).draw();
+	if (rect.leftPressed) {
+		rect(undo_png).draw(Palette::Lightslategray);
+	}
+
+	// undoの処理
+	if (rect.leftClicked || (Input::KeyControl + Input::KeyZ).clicked) {
+		// 1ターン目以外の時実行する
+		int __pointer = all_turn - turn - 1;
+		if (__pointer >= 0) {
+			struct command now_command = procedure[__pointer];
+			for (int i = 0; i < 4; i++) {
+				if (now_command.stepState[i] == REMOVE) {
+					tile[now_command.nStep[i].x + agent[i].x][now_command.nStep[i].y + agent[i].y].state
+						= now_command.original_state[i];
+				}
+				if (now_command.stepState[i] == MOVE) {
+					tile[agent[i].x][agent[i].y].state = now_command.original_state[i];
+					agent[i].x -= now_command.nStep[i].x;
+					agent[i].y -= now_command.nStep[i].y;
+				}
+				agent[i].update();
+			}
+			turn++;
+		}
+	}
+}
+
+void redo(Texture redo_png) {
+	Rect rect = Rect(120, 10, 40, 40);
+	rect(redo_png).draw();
+	if (rect.leftPressed) {
+		rect(redo_png).draw(Palette::Lightslategray);
+	}
+	// redoの処理
+	if (rect.leftClicked || (Input::KeyControl + Input::KeyY).clicked) {
+		if (p_pointer - (all_turn - turn) >= 0) {
+			int __pointer = all_turn - turn;
+			Println(__pointer);
+			struct command now_command = procedure[__pointer];
+			for (int i = 0; i < 4; i++) {
+				if (now_command.stepState[i] == MOVE) {
+					tile[agent[i].x + now_command.nStep[i].x][agent[i].y + now_command.nStep[i].y].state = agent[i].state;
+					agent[i].x += now_command.nStep[i].x;
+					agent[i].y += now_command.nStep[i].y;
+					agent[i].update();
+				}
+				if (now_command.stepState[i] == REMOVE) {
+					tile[agent[i].x + now_command.nStep[i].x][agent[i].y + now_command.nStep[i].y].state = NEUTRAL;
+				}
+			}
+			turn--;
+		}
+	}
 }

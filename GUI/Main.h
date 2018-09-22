@@ -7,7 +7,7 @@
 #include <ws2tcpip.h>
 
 static const int margin_x = 50;
-static const int margin_y = 50;
+static const int margin_y = 70;
 
 enum State
 {
@@ -19,3 +19,9 @@ enum StepState
 	MOVE, REMOVE, STAY
 };
 
+// undo redo‚ÉŽg—p
+struct command {
+	StepState stepState[4];
+	Point nStep[4];
+	State original_state[4];
+};

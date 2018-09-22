@@ -173,6 +173,8 @@
     <Image Include="Example\Well\Well.jpg" />
     <Image Include="Example\Windmill.png" />
     <Image Include="Icon.ico" />
+    <Image Include="redo.png" />
+    <Image Include="undo.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="client.py" />

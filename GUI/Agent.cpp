@@ -74,7 +74,7 @@ void Agent::drawStep() {
 	}
 
 	Line(circle.center, nStep * 40 + circle.center).drawArrow(2, Vec2(8, 8), c);
-	if (is_ai) {
+	if (!aiStep.isZero()) {
 		Line(circle.center, aiStep * 30 + circle.center).drawArrow(2, Vec2(8, 8), Palette::Purple);
 	}
 }

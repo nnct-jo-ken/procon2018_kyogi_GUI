@@ -28,6 +28,8 @@ void stringtoarray(std::string, int[]);
 void countAscore(int, int, int*, bool*, State);
 void undo(Texture);
 void redo(Texture);
+void rotate_board(Texture);
+void copy_show_pos();
 int tileScore(State);
 int areaScore(State);
 bool can_act(int, int);
@@ -36,7 +38,8 @@ std::string toBuff_state();
 
 int row = 12;
 int column = 12;
-int a = 5;
+int what_is_this = 5;
+int angle = 0;
 bool inMenu = true;
 int all_turn;
 std::atomic<int> turn = 80;
@@ -66,6 +69,9 @@ void Main()
 	const Font font(15);
 	const Texture undo_png(L"./undo.png");
 	const Texture redo_png(L"./redo.png");
+	const Texture rotate_png(L"./rotate.png");
+	const Texture heart_png(L"./heart.png");
+	const Texture spade_png(L"./spade.png");
 
 	GUI gui(GUIStyle::Default);
 	gui.setTitle(L"盤面の生成");
@@ -82,10 +88,12 @@ void Main()
 		if (inMenu) {
 			if (gui.button(L"auto").pushed) {
 				createBoard();
+				copy_show_pos();
 				inMenu = false;
 			}
 			if (gui.button(L"qr").pushed) {
 				createFromQR();
+				copy_show_pos();
 				inMenu = false;
 			}
 			if (!inMenu) {
@@ -98,6 +106,7 @@ void Main()
 			displayInfo(font);
 			undo(undo_png);
 			redo(redo_png);
+			rotate_board(rotate_png);
 		}
 
 		// xボタンを押したときの処理
@@ -132,27 +141,27 @@ void updateField(Font font) {
 	}
 
 	for (int i = 0; i < 4; i++) {
-		agent[i].draw(font);
+		agent[i].draw(font, tile);
 	}
 	operateAgent();
 }
 
 // エージェントの操作
 void operateAgent() {
-	if (a == 5) {
+	if (what_is_this == 5) {
 		for (int i = 0; i < 4; i++) {
 			if (agent[i].circle.leftPressed) {
-				a = i;
+				what_is_this = i;
 			}
 		}
 	}
 
-	if (a != 5) {
-		agent[a].operate(tile, row, column);
+	if (what_is_this != 5) {
+		agent[what_is_this].operate(tile, row, column);
 	}
 
 	if (Input::MouseL.released) {
-		a = 5;
+		what_is_this = 5;
 	}
 
 }
@@ -403,7 +412,10 @@ void bufftoAgent(char buff[], State team) {
 
 // ゲームの情報を描画する
 void displayInfo(Font font) {
-	int infox = tile[row - 1][0].rect.x + 100;
+	int infox = column * 40 + margin_x + 100;
+	if (row > column) {
+		infox = row * 40 + margin_x * 2 + 100;
+	}
 	font(L"残り", turn, L"ターン").draw(infox, margin_y, Palette::Black);
 	Rect button(infox, margin_y + 50, 130, 30);
 	button.drawFrame(1, 1, Palette::Black);
@@ -495,6 +507,8 @@ void transitionTurn() {
 			agent[i].y += agent[i].nStep.y;
 			tile[agent[i].x][agent[i].y].state = agent[i].state;
 		}
+		agent[i].show_x = tile[agent[i].x][agent[i].y].show_x;
+		agent[i].show_y = tile[agent[i].x][agent[i].y].show_y;
 		agent[i].nStep = Point(0, 0);
 		agent[i].deletePoint = Point(0, 0);
 		agent[i].aiStep = Point(0, 0);
@@ -709,7 +723,6 @@ void redo(Texture redo_png) {
 	if (rect.leftClicked || (Input::KeyControl + Input::KeyY).clicked) {
 		if (p_pointer - (all_turn - turn) >= 0) {
 			int __pointer = all_turn - turn;
-			Println(__pointer);
 			struct command now_command = procedure[__pointer];
 			for (int i = 0; i < 4; i++) {
 				if (now_command.stepState[i] == MOVE) {
@@ -724,5 +737,49 @@ void redo(Texture redo_png) {
 			}
 			turn--;
 		}
+	}
+}
+
+void copy_show_pos() {
+	for (int x = 0; x < row; x++) {
+		for (int y = 0; y < column; y++) {
+			tile[x][y].show_x = tile[x][y].x;
+			tile[x][y].show_y = tile[x][y].y;
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		agent[i].show_x = agent[i].x;
+		agent[i].show_y = agent[i].y;
+	}
+}
+
+void rotate_board(Texture tex) {
+	Rect rect = Rect(250, 20, 30, 35);
+	rect(tex).draw();
+	if (rect.leftClicked) {
+		int r_column = column;
+		if (angle % 180 == 90) {
+			r_column = row;
+		}
+		for (int x = 0; x < row; x++) {
+			for (int y = 0; y < column; y++) {
+				int rx = tile[x][y].show_x;
+				int ry = tile[x][y].show_y;
+				tile[x][y].show_x = -ry + r_column - 1;
+				tile[x][y].show_y = rx;
+				tile[x][y].rect = Rect(tile[x][y].show_x * 40 + margin_x, tile[x][y].show_y * 40 + margin_y, 40);
+			}
+		}
+
+		for (int i = 0; i < 4; i++) {
+			int rx = agent[i].show_x;
+			int ry = agent[i].show_y;
+			agent[i].show_x = -ry + r_column - 1;
+			agent[i].show_y = rx;
+			agent[i].circle = Circle(agent[i].show_x * 40 + margin_x + 20, agent[i].show_y * 40 + margin_y + 20, 15);
+		}
+
+		angle = (angle + 90) % 360;
 	}
 }

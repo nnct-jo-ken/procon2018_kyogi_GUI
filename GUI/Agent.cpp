@@ -8,7 +8,7 @@ void Agent::init(int x_, int y_, State s_) {
 	circle = Circle(x * 40 + margin_x + 20, y * 40 + margin_y + 20, 15);
 }
 
-void Agent::draw(Font font) {
+void Agent::draw(Font font, Tile tile[12][12]) {
 	if (state == TEAM1) {
 		circle.draw(Palette::Skyblue);
 		circle.drawFrame(0, 1, Palette::Black);
@@ -22,10 +22,10 @@ void Agent::draw(Font font) {
 	}
 
 	if (stepState != STAY) {
-		drawStep();
+		drawStep(tile);
 	}
 
-	font(id).drawCenter(x * 40 + margin_x + 18, y * 40 + margin_y + 18, Palette::Black);
+	font(id).drawCenter(circle.x - 2, circle.y - 2, Palette::Black);
 
 }
 
@@ -61,7 +61,7 @@ void Agent::operate(Tile tile[12][12], int row, int column) {
 	}
 }
 
-void Agent::drawStep() {
+void Agent::drawStep(Tile tile[12][12]) {
 	Color c;
 	switch (stepState)
 	{
@@ -72,15 +72,16 @@ void Agent::drawStep() {
 		c = Palette::Red;
 		break;
 	}
-
-	Line(circle.center, nStep * 40 + circle.center).drawArrow(2, Vec2(8, 8), c);
+	Point n_tile = getpos() + nStep;
+	Line(circle.center, tile[n_tile.x][n_tile.y].rect.center).drawArrow(2, Vec2(8, 8), c);
 	if (!aiStep.isZero()) {
-		Line(circle.center, aiStep * 30 + circle.center).drawArrow(2, Vec2(8, 8), Palette::Purple);
+		Point ai_tile = getpos() + aiStep;
+		Line(circle.center, circle.center + (Vec2)(tile[ai_tile.x][ai_tile.y].rect.center - circle.center).normalize() * 30).drawArrow(2, Vec2(8, 8), Palette::Purple);
 	}
 }
 
 void Agent::update() {
-	circle = Circle(x * 40 + margin_x + 20, y * 40 + margin_y + 20, 15);
+	circle = Circle(show_x * 40 + margin_x + 20, show_y * 40 + margin_y + 20, 15);
 }
 
 Point Agent::getpos() {

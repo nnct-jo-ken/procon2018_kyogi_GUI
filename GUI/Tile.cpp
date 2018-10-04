@@ -21,7 +21,7 @@ void Tile::draw(Font font) {
 
 	rect.drawFrame(1, 1, Palette::Gray);
 
-	font(score).drawCenter(x * 40 + margin_x + 20, y * 40 + margin_y + 20, Palette::Gray);
+	font(score).drawCenter(rect.x + 20, rect.y + 20, Palette::Gray);
 }
 
 void Tile::update(State s_) {

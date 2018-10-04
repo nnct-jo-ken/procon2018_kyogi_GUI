@@ -13,6 +13,8 @@ public:
 	int score = 0;
 	int x = 0;
 	int y = 0;
+	int show_x;
+	int show_y;
 	State state = NEUTRAL;
 	Rect rect;
 

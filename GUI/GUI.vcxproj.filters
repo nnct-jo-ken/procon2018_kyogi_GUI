@@ -119,13 +119,13 @@
     <Image Include="redo.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="spade.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
     <Image Include="rotate.png">
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="heart.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="spade.png">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

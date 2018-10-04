@@ -22,7 +22,7 @@ void thread_tcp(u_short, State);
 void thread_score();
 void to_charArray(std::string, char[]);
 void bufftoAgent(char[], State);
-void displayInfo(Font);
+void displayInfo(Font, Texture, Texture);
 void transitionTurn();
 void stringtoarray(std::string, int[]);
 void countAscore(int, int, int*, bool*, State);
@@ -46,6 +46,7 @@ std::atomic<int> turn = 80;
 std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];
+Circle origin;
 //　得点計算用
 bool reach_end = false;
 int area_score = 0;
@@ -103,7 +104,7 @@ void Main()
 		}
 		else {
 			updateField(font);
-			displayInfo(font);
+			displayInfo(font, spade_png, heart_png);
 			undo(undo_png);
 			redo(redo_png);
 			rotate_board(rotate_png);
@@ -130,6 +131,7 @@ void init(int row_, int column_) {
 		}
 	}
 	all_turn = turn;
+	origin = Circle(margin_x, margin_y, 5);
 }
 
 // 盤面更新(描画 & 更新)
@@ -411,10 +413,10 @@ void bufftoAgent(char buff[], State team) {
 }
 
 // ゲームの情報を描画する
-void displayInfo(Font font) {
-	int infox = column * 40 + margin_x + 100;
+void displayInfo(Font font, Texture card_black, Texture card_red) {
+	int infox = column * 40 + margin_x + 50;
 	if (row > column) {
-		infox = row * 40 + margin_x * 2 + 100;
+		infox = row * 40 + margin_x * 2 + 50;
 	}
 	font(L"残り", turn, L"ターン").draw(infox, margin_y, Palette::Black);
 	Rect button(infox, margin_y + 50, 130, 30);
@@ -431,6 +433,28 @@ void displayInfo(Font font) {
 		}
 	}
 	font(L"次のターンへ").draw(infox, margin_y + 50, Palette::Black);
+
+	// トランプ
+	int card_index[2];
+	for (int i = 0; i < 2; i++) {
+		Point agent_direction;
+		agent_direction.x = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].show_x - agent[i].show_x;
+		agent_direction.y = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].show_y - agent[i].show_y;
+		if (agent_direction == Point(0, 0)) { card_index[i] = 9; }
+		if (agent_direction == Point(0, 1)) { card_index[i] = 1; }
+		if (agent_direction == Point(1, 1)) { card_index[i] = 2; }
+		if (agent_direction == Point(1, 0)) { card_index[i] = 3; }
+		if (agent_direction == Point(1, -1)) { card_index[i] = 4; }
+		if (agent_direction == Point(0, -1)) { card_index[i] = 5; }
+		if (agent_direction == Point(-1, -1)) { card_index[i] = 6; }
+		if (agent_direction == Point(-1, 0)) { card_index[i] = 7; }
+		if (agent_direction == Point(-1, 1)) { card_index[i] = 8; }
+	}
+	Rect agent_0_card = Rect(infox, 200, 100, 150);
+	Rect agent_1_card = Rect(infox + 100, 200, 100, 150);
+	agent_0_card(card_black((card_index[0] - 1)*409, 0, 409, 600)).draw();
+	agent_1_card(card_red((card_index[1] - 1) * 409, 0, 409, 600)).draw();
+	origin.draw(Palette::Red);
 }
 
 // ターン推移の関数
@@ -697,6 +721,9 @@ void undo(Texture undo_png) {
 		if (__pointer >= 0) {
 			struct command now_command = procedure[__pointer];
 			for (int i = 0; i < 4; i++) {
+				agent[i].nStep = Point(0, 0);
+				agent[i].aiStep = Point(0, 0);
+				agent[i].stepState = STAY;
 				if (now_command.stepState[i] == REMOVE) {
 					tile[now_command.nStep[i].x + agent[i].x][now_command.nStep[i].y + agent[i].y].state
 						= now_command.original_state[i];
@@ -706,6 +733,8 @@ void undo(Texture undo_png) {
 					agent[i].x -= now_command.nStep[i].x;
 					agent[i].y -= now_command.nStep[i].y;
 				}
+				agent[i].show_x = tile[agent[i].x][agent[i].y].show_x;
+				agent[i].show_y = tile[agent[i].x][agent[i].y].show_y;
 				agent[i].update();
 			}
 			turn++;
@@ -725,15 +754,20 @@ void redo(Texture redo_png) {
 			int __pointer = all_turn - turn;
 			struct command now_command = procedure[__pointer];
 			for (int i = 0; i < 4; i++) {
+				agent[i].nStep = Point(0, 0);
+				agent[i].aiStep = Point(0, 0);
+				agent[i].stepState = STAY;
 				if (now_command.stepState[i] == MOVE) {
 					tile[agent[i].x + now_command.nStep[i].x][agent[i].y + now_command.nStep[i].y].state = agent[i].state;
 					agent[i].x += now_command.nStep[i].x;
 					agent[i].y += now_command.nStep[i].y;
-					agent[i].update();
 				}
 				if (now_command.stepState[i] == REMOVE) {
 					tile[agent[i].x + now_command.nStep[i].x][agent[i].y + now_command.nStep[i].y].state = NEUTRAL;
 				}
+				agent[i].show_x = tile[agent[i].x][agent[i].y].show_x;
+				agent[i].show_y = tile[agent[i].x][agent[i].y].show_y;
+				agent[i].update();
 			}
 			turn--;
 		}
@@ -782,4 +816,9 @@ void rotate_board(Texture tex) {
 
 		angle = (angle + 90) % 360;
 	}
+
+	if (angle == 0) { origin = Circle(margin_x, margin_y, 5); }
+	if (angle == 90) { origin = Circle(margin_x + column * 40, margin_y, 5); }
+	if (angle == 180) { origin = Circle(margin_x + row * 40, margin_y + column * 40, 5); }
+	if (angle == 270) { origin = Circle(margin_x, margin_y + row * 40, 5); }
 }

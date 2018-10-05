@@ -51,6 +51,8 @@ Circle origin;
 bool reach_end = false;
 int area_score = 0;
 
+bool a = true;
+
 // undo redo用 とりあえず120ターン分
 struct command procedure[120];
 int p_pointer = -1;
@@ -68,11 +70,11 @@ void Main()
 	std::thread sThread(thread_score);
 
 	const Font font(15);
-	const Texture undo_png(L"./undo.png");
-	const Texture redo_png(L"./redo.png");
-	const Texture rotate_png(L"./rotate.png");
-	const Texture heart_png(L"./heart.png");
-	const Texture spade_png(L"./spade.png");
+	const Texture undo_png(L"./textures/undo.png");
+	const Texture redo_png(L"./textures/redo.png");
+	const Texture rotate_png(L"./textures/rotate.png");
+	const Texture heart_png(L"./textures/heart.png");
+	const Texture spade_png(L"./textures/spade.png");
 
 	GUI gui(GUIStyle::Default);
 	gui.setTitle(L"盤面の生成");
@@ -108,6 +110,11 @@ void Main()
 			undo(undo_png);
 			redo(redo_png);
 			rotate_board(rotate_png);
+			if (turn == 0 && a) {
+				Println(L"TEAM1:", tileScore(TEAM1), L":", areaScore(TEAM1));
+				Println(L"TEAM2:", tileScore(TEAM2), L":", areaScore(TEAM2));
+				a = false;
+			}
 		}
 
 		// xボタンを押したときの処理
@@ -442,13 +449,14 @@ void displayInfo(Font font, Texture card_black, Texture card_red) {
 		agent_direction.y = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].show_y - agent[i].show_y;
 		if (agent_direction == Point(0, 0)) { card_index[i] = 9; }
 		if (agent_direction == Point(0, 1)) { card_index[i] = 1; }
-		if (agent_direction == Point(1, 1)) { card_index[i] = 2; }
-		if (agent_direction == Point(1, 0)) { card_index[i] = 3; }
-		if (agent_direction == Point(1, -1)) { card_index[i] = 4; }
+		if (agent_direction == Point(1, 1)) { card_index[i] = 8; }
+		if (agent_direction == Point(1, 0)) { card_index[i] = 7; }
+		if (agent_direction == Point(1, -1)) { card_index[i] = 6; }
 		if (agent_direction == Point(0, -1)) { card_index[i] = 5; }
-		if (agent_direction == Point(-1, -1)) { card_index[i] = 6; }
-		if (agent_direction == Point(-1, 0)) { card_index[i] = 7; }
-		if (agent_direction == Point(-1, 1)) { card_index[i] = 8; }
+		if (agent_direction == Point(-1, -1)) { card_index[i] = 4; }
+		if (agent_direction == Point(-1, 0)) { card_index[i] = 3; }
+		if (agent_direction == Point(-1, 1)) { card_index[i] = 2; }
+		if (agent[i].stepState == STAY) { card_index[i] = 9; }
 	}
 	Rect agent_0_card = Rect(infox, 200, 100, 150);
 	Rect agent_1_card = Rect(infox + 100, 200, 100, 150);

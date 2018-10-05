@@ -177,6 +177,11 @@
     <Image Include="redo.png" />
     <Image Include="rotate.png" />
     <Image Include="spade.png" />
+    <Image Include="textures\heart.png" />
+    <Image Include="textures\redo.png" />
+    <Image Include="textures\rotate.png" />
+    <Image Include="textures\spade.png" />
+    <Image Include="textures\undo.png" />
     <Image Include="undo.png" />
   </ItemGroup>
   <ItemGroup>

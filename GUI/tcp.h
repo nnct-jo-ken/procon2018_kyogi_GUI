@@ -4,7 +4,7 @@
 class tcp
 {
 public:
-	static void Tsend(char[], char[], SOCKET sock);
-	static void Trecv(char[], SOCKET sock);
+	static int Tsend(char[], char[], SOCKET sock);
+	static int Trecv(char[], SOCKET sock);
 };
 

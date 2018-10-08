@@ -116,21 +116,6 @@
     <Image Include="Example\Well\Well.jpg">
       <Filter>リソース ファイル\Example\Well</Filter>
     </Image>
-    <Image Include="undo.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="redo.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="rotate.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="heart.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="spade.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
     <Image Include="textures\heart.png">
       <Filter>リソース ファイル\textures</Filter>
     </Image>

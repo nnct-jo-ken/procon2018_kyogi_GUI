@@ -172,17 +172,12 @@
     <Image Include="Example\Siv3D-kun.png" />
     <Image Include="Example\Well\Well.jpg" />
     <Image Include="Example\Windmill.png" />
-    <Image Include="heart.png" />
     <Image Include="Icon.ico" />
-    <Image Include="redo.png" />
-    <Image Include="rotate.png" />
-    <Image Include="spade.png" />
     <Image Include="textures\heart.png" />
     <Image Include="textures\redo.png" />
     <Image Include="textures\rotate.png" />
     <Image Include="textures\spade.png" />
     <Image Include="textures\undo.png" />
-    <Image Include="undo.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="client.py" />

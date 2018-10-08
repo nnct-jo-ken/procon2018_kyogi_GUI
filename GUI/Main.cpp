@@ -42,11 +42,14 @@ int what_is_this = 5;
 int angle = 0;
 bool inMenu = true;
 int all_turn;
-std::atomic<int> turn = 80;
+std::atomic<int> turn = 60;
 std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];
 Circle origin;
+// 同期オブジェクト
+HANDLE ready_board;
+HANDLE turned_turn;
 //　得点計算用
 bool reach_end = false;
 int area_score = 0;
@@ -81,10 +84,9 @@ void Main()
 	gui.add(L"auto", GUIButton::Create(L"自動生成"));
 	gui.add(L"qr", GUIButton::Create(L"QRコードから"));
 
-	// 戻るボタンの情報
-	//std::fstream file;
-	//file.open("undo.dat", std::ios::binary | std::ios::out | std::ios::in);
-
+	// 同期オブジェクトの初期化
+	ready_board = CreateEvent(NULL, true, false, NULL);
+	turned_turn = CreateEvent(NULL, true, false, NULL);
 
 	while (System::Update())
 	{
@@ -102,6 +104,7 @@ void Main()
 			if (!inMenu) {
 				gui.hide();
 				ready = true;
+				SetEvent(ready_board);
 			}
 		}
 		else {
@@ -266,7 +269,6 @@ void thread_tcp(u_short port, State team) {
 	SOCKET sock;
 	struct sockaddr_in addr;
 	int len;
-	int flag = turn;
 	struct sockaddr_in client;
 
 	char buff1[512];
@@ -275,39 +277,45 @@ void thread_tcp(u_short port, State team) {
 
 	// winsock2の初期化
 	WSAStartup(MAKEWORD(2, 0), &wsaData);
-
 	// ソケットの作成
 	sock0 = socket(AF_INET, SOCK_STREAM, 0);
-
 	// ソケットの設定
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.S_un.S_addr = INADDR_ANY;
 	bind(sock0, (struct sockaddr *)&addr, sizeof(addr));
 
+
 	// 盤面の生成が終わるまで待つ
-	while (!ready);
+	WaitForSingleObject(ready_board, INFINITE);
 
-	// 接続を待てる状態にする
-	listen(sock0, 5);
-	len = sizeof(client);
-	sock = accept(sock0, (struct sockaddr *)&client, &len);
+	while (turn > 0) {
+		// 接続を待てる状態にする
+		listen(sock0, 5);
+		len = sizeof(client);
+		sock = accept(sock0, (struct sockaddr *)&client, &len);
+		while (turn > 0) {
+			to_charArray(toBuff_score(), buff1);
+			to_charArray(toBuff_state(), buff2);
+			if (tcp::Tsend(buff1, buff2, sock) < 0) {
+				break;
+			}
 
-	while (turn >= 0) {
-		to_charArray(toBuff_score(), buff1);
-		to_charArray(toBuff_state(), buff2);
-		tcp::Tsend(buff1, buff2, sock);
+			if (tcp::Trecv(buff, sock) < 0) {
+				break;
+			}
+			bufftoAgent(buff, team);
+			
+			ResetEvent(turned_turn);
+			// ターンが経過するまで待つ
+			WaitForSingleObject(turned_turn, INFINITE);
+		}
 
-		tcp::Trecv(buff, sock);
-		bufftoAgent(buff, team);
-		while (turn == flag);
-		flag = turn;
+		// セッションを終了
+		closesocket(sock);
+		// winsock2の終了処理
+		WSACleanup();
 	}
-
-	// セッションを終了
-	closesocket(sock);
-	// winsock2の終了処理
-	WSACleanup();
 }
 
 std::string toBuff_score() {
@@ -447,7 +455,6 @@ void displayInfo(Font font, Texture card_black, Texture card_red) {
 		Point agent_direction;
 		agent_direction.x = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].show_x - agent[i].show_x;
 		agent_direction.y = tile[agent[i].x + agent[i].nStep.x][agent[i].y + agent[i].nStep.y].show_y - agent[i].show_y;
-		if (agent_direction == Point(0, 0)) { card_index[i] = 9; }
 		if (agent_direction == Point(0, 1)) { card_index[i] = 1; }
 		if (agent_direction == Point(1, 1)) { card_index[i] = 8; }
 		if (agent_direction == Point(1, 0)) { card_index[i] = 7; }
@@ -548,6 +555,7 @@ void transitionTurn() {
 		agent[i].update();
 	}
 	turn--;
+	SetEvent(turned_turn);
 }
 
 bool can_act(int x, int y) {

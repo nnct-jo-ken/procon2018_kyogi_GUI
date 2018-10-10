@@ -18,8 +18,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as socket1:
 	socket1.connect(("127.0.0.1", 12345))
 
 	while True:
+        # タイルの点数受信
 		buff1 = socket1.recv(512)
+        # タイミング合わせ
 		socket1.send(b'end')
+        # 
 		buff2 = socket1.recv(512)
 
 		print(buff1)
@@ -28,4 +31,3 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as socket1:
 		buffer = Tsend()
 		print(buffer);
 		socket1.send(buffer.encode('utf-8'))
-		socket1.recv(8);

@@ -493,6 +493,9 @@ void transitionTurn() {
 				agent[i].nStep = Point(0, 0);
 			}
 		}
+		if (agent[i].stepState == STAY) {
+			agent[i].nStep = Point(0, 0);
+		}
 	}
 
 	for (int i = 0; i < 3; i++) {
@@ -754,6 +757,7 @@ void undo(Texture undo_png) {
 				agent[i].update();
 			}
 			turn++;
+			SetEvent(turned_turn);
 		}
 	}
 }
@@ -786,6 +790,7 @@ void redo(Texture redo_png) {
 				agent[i].update();
 			}
 			turn--;
+			SetEvent(turned_turn);
 		}
 	}
 }

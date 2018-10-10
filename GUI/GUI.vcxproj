@@ -114,10 +114,12 @@
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>C:\boost_1_65_1\include\boost-1_65_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\boost_1_65_1\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -280,13 +282,26 @@
   <ItemGroup>
     <ClInclude Include="Agent.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="qrSource\analysis.h" />
+    <ClInclude Include="qrSource\include.h" />
+    <ClInclude Include="qrSource\qrdecode.h" />
+    <ClInclude Include="qrSource\quirc.h" />
+    <ClInclude Include="qrSource\quirc_internal.h" />
+    <ClInclude Include="qrSource\text_set.h" />
+    <ClInclude Include="QR_reader.h" />
     <ClInclude Include="rand_board.h" />
     <ClInclude Include="tcp.h" />
-    <ClInclude Include="Tile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Agent.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="qrSource\analysis.cpp" />
+    <ClCompile Include="qrSource\decode.c" />
+    <ClCompile Include="qrSource\identify.c" />
+    <ClCompile Include="qrSource\quirc.c" />
+    <ClCompile Include="qrSource\text_set.cpp" />
+    <ClCompile Include="qrSource\version_db.c" />
+    <ClCompile Include="QR_reader.cpp" />
     <ClCompile Include="rand_board.cpp" />
     <ClCompile Include="tcp.cpp" />
     <ClCompile Include="Tile.cpp" />

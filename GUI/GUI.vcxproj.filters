@@ -414,9 +414,6 @@
     <ClInclude Include="Main.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Tile.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Agent.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -424,6 +421,27 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="tcp.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="qrSource\analysis.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="qrSource\include.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="qrSource\qrdecode.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="qrSource\quirc.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="qrSource\text_set.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="qrSource\quirc_internal.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="QR_reader.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -441,6 +459,27 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="tcp.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="qrSource\analysis.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="qrSource\decode.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="qrSource\identify.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="qrSource\quirc.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="qrSource\text_set.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="qrSource\version_db.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="QR_reader.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

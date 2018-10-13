@@ -11,6 +11,7 @@
 #include "Agent.h"
 #include "rand_board.h"
 #include "tcp.h"
+#include "QR_reader.h"
 
 
 void init(int, int);
@@ -47,6 +48,7 @@ std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];
 Circle origin;
+QR_reader qr_reader;
 // 同期オブジェクト
 HANDLE ready_board;
 HANDLE turned_turn;
@@ -88,6 +90,9 @@ void Main()
 	ready_board = CreateEvent(NULL, true, false, NULL);
 	turned_turn = CreateEvent(NULL, true, false, NULL);
 
+
+	qr_reader.init();
+
 	while (System::Update())
 	{
 		if (inMenu) {
@@ -97,6 +102,8 @@ void Main()
 				inMenu = false;
 			}
 			if (gui.button(L"qr").pushed) {
+				gui.hide();
+				qr_reader.read();
 				createFromQR();
 				copy_show_pos();
 				inMenu = false;
@@ -220,22 +227,25 @@ void createBoard() {
 
 // 盤面をQRから生成する
 void createFromQR() {
-	std::ifstream shapeinfo("./shape_info.txt");
 	std::string strs[15];
 	int data[15][12];
-	int num = 0;
 
-	if (shapeinfo.fail()) {
-		Println(L"error failed open file");
-		return;
-	}
-
-	while (getline(shapeinfo, strs[num])) {
-		num++;
+	// 読み込んだqrの情報を2次元文字列に変更
+	std::string qr_buff = qr_reader.decoded[0].narrow();
+	int col = 0;
+	int i = 0;
+	while (qr_buff[i] != '\0') {
+		if (qr_buff[i] == ':') {
+			col++;
+		}
+		else {
+			strs[col] += qr_buff[i];
+		}
+		i++;
 	}
 
 	// starsの文字列をint配列に変換
-	for (int i = 0; i < num; i++) {
+	for (i = 0; i < col; i++) {
 		stringtoarray(strs[i], data[i]);
 	}
 
@@ -255,7 +265,7 @@ void createFromQR() {
 	agent[2].init(agent[0].x, column - agent[0].y - 1, TEAM2);
 	agent[3].init(row - agent[0].x - 1, agent[0].y, TEAM2);
 
-	for (int i = 0; i < 4; i++) {
+	for (i = 0; i < 4; i++) {
 		tile[agent[i].x][agent[i].y].state = agent[i].state;
 		agent[i].id = i;
 	}
@@ -275,20 +285,19 @@ void thread_tcp(u_short port, State team) {
 	char buff2[512];
 	char buff[32];
 
-	// winsock2の初期化
-	WSAStartup(MAKEWORD(2, 0), &wsaData);
-	// ソケットの作成
-	sock0 = socket(AF_INET, SOCK_STREAM, 0);
-	// ソケットの設定
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	addr.sin_addr.S_un.S_addr = INADDR_ANY;
-	bind(sock0, (struct sockaddr *)&addr, sizeof(addr));
-
-
 	// 盤面の生成が終わるまで待つ
 	WaitForSingleObject(ready_board, INFINITE);
 
+		// winsock2の初期化
+		WSAStartup(MAKEWORD(2, 0), &wsaData);
+		// ソケットの作成
+		sock0 = socket(AF_INET, SOCK_STREAM, 0);
+		// ソケットの設定
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+		addr.sin_addr.S_un.S_addr = INADDR_ANY;
+		bind(sock0, (struct sockaddr *)&addr, sizeof(addr));
+	
 	while (turn > 0) {
 		// 接続を待てる状態にする
 		listen(sock0, 5);

@@ -1,9 +1,12 @@
 #pragma once
 #include "Main.h"
+#include "qrSource/include.h"
+#include <fstream>
+#include <thread>
+
 class QR_reader
 {
-private:
-	Webcam webcam;
+public:
 	Image image;
 	DynamicTexture texture;
 	std::string binary;
@@ -12,7 +15,8 @@ private:
 	QRData data;
 	GUI message;	//情報ウィンドウ
 	GUI confirmation;	//確認ウィンドウ
-public:
+
 	void init();
+	void read();
 };
 

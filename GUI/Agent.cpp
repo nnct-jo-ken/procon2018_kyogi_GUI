@@ -17,9 +17,6 @@ void Agent::draw(Font font, Tile tile[12][12]) {
 		circle.draw(Palette::Orange);
 		circle.drawFrame(0, 1, Palette::Black);
 	}
-	else {
-		exit(EXIT_FAILURE);
-	}
 
 	if (stepState != STAY) {
 		drawStep(tile);

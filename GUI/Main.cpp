@@ -23,7 +23,7 @@ void thread_tcp(u_short, State);
 void thread_score();
 void to_charArray(std::string, char[]);
 void bufftoAgent(char[], State);
-void displayInfo(Font, Texture, Texture);
+void displayInfo(Font, Texture, Texture, Texture);
 void transitionTurn();
 void stringtoarray(std::string, int[]);
 void countAscore(int, int, int*, bool*, State);
@@ -42,6 +42,7 @@ int column = 12;
 int what_is_this = 5;
 int angle = 0;
 bool inMenu = true;
+bool swap_card = true;
 int all_turn;
 std::atomic<int> turn = 60;
 std::atomic<bool> ready = false;
@@ -80,6 +81,7 @@ void Main()
 	const Texture rotate_png(L"./textures/rotate.png");
 	const Texture heart_png(L"./textures/heart.png");
 	const Texture spade_png(L"./textures/spade.png");
+	const Texture swap_mark(L"./textures/swap_mark.png");
 
 	GUI gui(GUIStyle::Default);
 	gui.setTitle(L"盤面の生成");
@@ -116,7 +118,7 @@ void Main()
 		}
 		else {
 			updateField(font);
-			displayInfo(font, spade_png, heart_png);
+			displayInfo(font, spade_png, heart_png, swap_mark);
 			undo(undo_png);
 			redo(redo_png);
 			rotate_board(rotate_png);
@@ -262,8 +264,8 @@ void createFromQR() {
 	// 味方エージェントの位置代入
 	agent[0].init(data[column + 1][1] - 1, data[column + 1][0] - 1, TEAM1);
 	agent[1].init(data[column + 2][1] - 1, data[column + 2][0] - 1, TEAM1);
-	agent[2].init(agent[0].x, column - agent[0].y - 1, TEAM2);
-	agent[3].init(row - agent[0].x - 1, agent[0].y, TEAM2);
+	agent[2].init(row - agent[1].x - 1, column - agent[0].y - 1, TEAM2);
+	agent[3].init(row - agent[0].x - 1, column - agent[1].y - 1, TEAM2);
 
 	for (i = 0; i < 4; i++) {
 		tile[agent[i].x][agent[i].y].state = agent[i].state;
@@ -437,7 +439,7 @@ void bufftoAgent(char buff[], State team) {
 }
 
 // ゲームの情報を描画する
-void displayInfo(Font font, Texture card_black, Texture card_red) {
+void displayInfo(Font font, Texture card_black, Texture card_red, Texture swap_curve) {
 	int infox = column * 40 + margin_x + 50;
 	if (row > column) {
 		infox = row * 40 + margin_x * 2 + 50;
@@ -476,8 +478,27 @@ void displayInfo(Font font, Texture card_black, Texture card_red) {
 	}
 	Rect agent_0_card = Rect(infox, 200, 100, 150);
 	Rect agent_1_card = Rect(infox + 100, 200, 100, 150);
-	agent_0_card(card_black((card_index[0] - 1)*409, 0, 409, 600)).draw();
-	agent_1_card(card_red((card_index[1] - 1) * 409, 0, 409, 600)).draw();
+	
+	if (swap_card) {
+		agent_0_card(card_black((card_index[0] - 1) * 409, 0, 409, 600)).draw();
+		agent_1_card(card_red((card_index[1] - 1) * 409, 0, 409, 600)).draw();
+	}
+	else {
+		agent_0_card(card_red((card_index[0] - 1) * 409, 0, 409, 600)).draw();
+		agent_1_card(card_black((card_index[1] - 1) * 409, 0, 409, 600)).draw();
+	}
+
+	Rect swap_button = Rect(infox + 70, 170, 60, 30);
+	swap_button(swap_curve).draw();
+	if (swap_button.leftClicked) {
+		if (swap_card) {
+			swap_card = false;
+		}
+		else {
+			swap_card = true;
+		}
+	}
+
 	origin.draw(Palette::Red);
 }
 

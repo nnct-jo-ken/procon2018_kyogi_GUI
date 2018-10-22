@@ -181,6 +181,7 @@
     <Image Include="textures\redo.png" />
     <Image Include="textures\rotate.png" />
     <Image Include="textures\spade.png" />
+    <Image Include="textures\swap_mark.png" />
     <Image Include="textures\undo.png" />
   </ItemGroup>
   <ItemGroup>

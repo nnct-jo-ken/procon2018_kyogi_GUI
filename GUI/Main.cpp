@@ -31,6 +31,7 @@ void undo(Texture);
 void redo(Texture);
 void rotate_board(Texture);
 void copy_show_pos();
+void key_operate(Agent[], int);
 int tileScore(State);
 int areaScore(State);
 bool can_act(int, int);
@@ -165,6 +166,7 @@ void updateField(Font font) {
 		agent[i].draw(font, tile);
 	}
 	operateAgent();
+	key_operate(agent, angle);
 }
 
 // エージェントの操作
@@ -404,6 +406,7 @@ void bufftoAgent(char buff[], State team) {
 	int x = 0;
 	while (x < 6) {
 		if (buff[index] == ' ' || buff[index] == ':') {
+
 			data[x] = std::stoi(str);
 			x++;
 			str = "";
@@ -454,7 +457,7 @@ void displayInfo(Font font, Texture card_black, Texture card_red, Texture swap_c
 		button.draw(Color(150, 150, 150));
 	}
 	if (turn > 0) {
-		if (button.leftClicked) {
+		if (button.leftClicked || Input::KeyEnter.clicked) {
 			transitionTurn();
 		}
 	}
@@ -872,4 +875,110 @@ void rotate_board(Texture tex) {
 	if (angle == 90) { origin = Circle(margin_x + column * 40, margin_y, 5); }
 	if (angle == 180) { origin = Circle(margin_x + row * 40, margin_y + column * 40, 5); }
 	if (angle == 270) { origin = Circle(margin_x, margin_y + row * 40, 5); }
+}
+
+void key_operate(Agent agent[], int angle) {
+	bool select_move1 = false;
+	Point point1 = Point(0, 0);
+
+	if (Input::KeyD.clicked) { 
+		point1 = Point(-1, 0);
+		select_move1 = true;
+	}
+	if (Input::KeyE.clicked) {
+		point1 = Point(-1, -1);
+		select_move1 = true;
+	}
+	if (Input::KeyR.clicked) {
+		point1 = Point(0, -1);
+		select_move1 = true;
+	}
+	if (Input::KeyT.clicked) {
+		point1 = Point(1, -1);
+		select_move1 = true;
+	}
+	if (Input::KeyG.clicked) {
+		point1 = Point(1, 0);
+		select_move1 = true;
+	}
+	if (Input::KeyB.clicked) {
+		point1 = Point(1, 1);
+		select_move1 = true;
+	}
+	if (Input::KeyV.clicked) {
+		point1 = Point(0, 1);
+		select_move1 = true;
+	}
+	if (Input::KeyC.clicked) {
+		point1 = Point(-1, 1);
+		select_move1 = true;
+	}
+
+	
+	if (select_move1) {
+		for (int i = 0; i < ((angle / 90) % 4); i++) {
+			Point cache = point1;
+			point1.x = cache.y;
+			point1.y = -cache.x;
+		}
+
+		if (agent[2].x + point1.x >= 0 && agent[2].x + point1.x < row &&
+			agent[2].y + point1.y >= 0 && agent[2].y + point1.y < column) {
+				agent[2].nStep = point1;
+				agent[2].stepState = MOVE;
+		}
+		select_move1 = false;
+	}
+
+	bool select_move2 = false;
+	Point point2 = Point(0, 0);
+
+	if (Input::KeyH.clicked) {
+		point2 = Point(-1, 0);
+		select_move2 = true;
+	}
+	if (Input::KeyY.clicked) {
+		point2 = Point(-1, -1);
+		select_move2 = true;
+	}
+	if (Input::KeyU.clicked) {
+		point2 = Point(0, -1);
+		select_move2 = true;
+	}
+	if (Input::KeyI.clicked) {
+		point2 = Point(1, -1);
+		select_move2 = true;
+	}
+	if (Input::KeyK.clicked) {
+		point2 = Point(1, 0);
+		select_move2 = true;
+	}
+	if (Input::KeyComma.clicked) {
+		point2 = Point(1, 1);
+		select_move2 = true;
+	}
+	if (Input::KeyM.clicked) {
+		point2 = Point(0, 1);
+		select_move2 = true;
+	}
+	if (Input::KeyN.clicked) {
+		point2 = Point(-1, 1);
+		select_move2 = true;
+	}
+
+
+	if (select_move2) {
+		for (int i = 0; i < ((angle / 90) % 4); i++) {
+			Point cache = point2;
+			point2.x = cache.y;
+			point2.y = -cache.x;
+		}
+
+		if (agent[3].x + point2.x >= 0 && agent[3].x + point2.x < row &&
+			agent[3].y + point2.y >= 0 && agent[3].y + point2.y < column) {
+			agent[3].nStep = point2;
+			agent[3].stepState = MOVE;
+		}
+		select_move2 = false;
+	}
 }

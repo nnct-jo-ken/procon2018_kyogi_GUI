@@ -45,7 +45,7 @@ int angle = 0;
 bool inMenu = true;
 bool swap_card = true;
 int all_turn;
-std::atomic<int> turn = 60;
+std::atomic<int> turn = 10000;
 std::atomic<bool> ready = false;
 Tile tile[12][12];
 Agent agent[4];

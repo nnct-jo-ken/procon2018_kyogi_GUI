@@ -10,6 +10,8 @@ public:
 	void draw(Font);
 	void update(State);
 	void overArrow(Vec2, Agent*);
+	void setter_update(Font);
+
 	int score = 0;
 	int x = 0;
 	int y = 0;

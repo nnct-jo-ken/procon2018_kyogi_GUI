@@ -37,3 +37,9 @@ void Tile::overArrow(Vec2 v2, Agent *agent) {
 		}
 	}
 }
+
+void Tile::setter_update(Font font) {
+	rect.draw(Palette::White);
+	rect.drawFrame(1, 1, Palette::Gray);
+	font(score).drawCenter(rect.x + 20, rect.y + 20, Palette::Gray);
+}

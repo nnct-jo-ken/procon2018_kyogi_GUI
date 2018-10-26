@@ -13,7 +13,6 @@
 #include "tcp.h"
 #include "QR_reader.h"
 
-
 void init(int, int);
 void updateField(Font);
 void operateAgent();
@@ -35,6 +34,7 @@ void key_operate(Agent[], int);
 int tileScore(State);
 int areaScore(State);
 bool can_act(int, int);
+bool setter(Tile[12][12], Agent[4], Font);
 std::string toBuff_score();
 std::string toBuff_state();
 
@@ -88,11 +88,14 @@ void Main()
 	gui.setTitle(L"盤面の生成");
 	gui.add(L"auto", GUIButton::Create(L"自動生成"));
 	gui.add(L"qr", GUIButton::Create(L"QRコードから"));
+	gui.add(L"self", GUIButton::Create(L"手動"));
 
 	// 同期オブジェクトの初期化
 	ready_board = CreateEvent(NULL, true, false, NULL);
 	turned_turn = CreateEvent(NULL, true, false, NULL);
 
+	bool qr_next_step = false;
+	bool set_self = false;
 
 	qr_reader.init();
 
@@ -109,8 +112,72 @@ void Main()
 				qr_reader.read();
 				createFromQR();
 				copy_show_pos();
+				qr_next_step = true;
 				inMenu = false;
 			}
+			if (gui.button(L"self").pushed) {
+				gui.add(L"row", GUITextField::Create(2));
+				gui.add(L"column", GUITextField::Create(2));
+				set_self = true;
+			}
+
+			if (set_self) {
+				if (Input::KeyEnter.clicked) {
+					set_self = false;
+					qr_next_step = true;
+					if (gui.textField(L"row").text.isEmpty) {
+						row = 11;
+					}
+					else {
+						row = std::stoi(gui.textField(L"row").text.narrow());
+					}
+
+					if (gui.textField(L"column").text.isEmpty) {
+						column = 8;
+					}
+					else {
+						column = std::stoi(gui.textField(L"column").text.narrow());
+					}
+
+					init(row, column);
+
+					for (int x = 0; x < row; x++) {
+						for (int y = 0; y < column; y++) {
+							tile[x][y].score = 1;
+						}
+					}
+
+					agent[0].init(0, 0, TEAM1);
+					agent[1].init(row - 1, column - 1, TEAM1);
+					agent[2].init(0, column - 1, TEAM2);
+					agent[3].init(row - 1, 0, TEAM2);
+
+					for (int i = 0; i < 4; i++) {
+						tile[agent[i].x][agent[i].y].state = agent[i].state;
+						agent[i].id = i;
+					}
+
+					copy_show_pos();
+					gui.hide();
+				}
+			}
+
+			if (qr_next_step) {
+				setter(tile, agent, font);
+				// エージェントとタイルの初期化
+				for (int x = 0; x < row; x++) {
+					for (int y = 0; y < column; y++) {
+						tile[x][y].state = NEUTRAL;
+					}
+				}
+
+				for (int i = 0; i < 4; i++) {
+					tile[agent[i].x][agent[i].y].state = agent[i].state;
+				}
+
+				inMenu = false;
+			}
+
 			if (!inMenu) {
 				gui.hide();
 				ready = true;
@@ -877,7 +944,7 @@ void rotate_board(Texture tex) {
 	if (angle == 270) { origin = Circle(margin_x, margin_y + row * 40, 5); }
 }
 
-void key_operate(Agent agent[], int angle) {
+void key_operate(Agent _agent[], int angle) {
 	bool select_move1 = false;
 	Point point1 = Point(0, 0);
 
@@ -922,10 +989,10 @@ void key_operate(Agent agent[], int angle) {
 			point1.y = -cache.x;
 		}
 
-		if (agent[2].x + point1.x >= 0 && agent[2].x + point1.x < row &&
-			agent[2].y + point1.y >= 0 && agent[2].y + point1.y < column) {
-				agent[2].nStep = point1;
-				agent[2].stepState = MOVE;
+		if (_agent[2].x + point1.x >= 0 && _agent[2].x + point1.x < row &&
+			_agent[2].y + point1.y >= 0 && _agent[2].y + point1.y < column) {
+				_agent[2].nStep = point1;
+				_agent[2].stepState = MOVE;
 		}
 		select_move1 = false;
 	}
@@ -974,11 +1041,31 @@ void key_operate(Agent agent[], int angle) {
 			point2.y = -cache.x;
 		}
 
-		if (agent[3].x + point2.x >= 0 && agent[3].x + point2.x < row &&
-			agent[3].y + point2.y >= 0 && agent[3].y + point2.y < column) {
-			agent[3].nStep = point2;
-			agent[3].stepState = MOVE;
+		if (_agent[3].x + point2.x >= 0 && _agent[3].x + point2.x < row &&
+			_agent[3].y + point2.y >= 0 && _agent[3].y + point2.y < column) {
+			_agent[3].nStep = point2;
+			_agent[3].stepState = MOVE;
 		}
 		select_move2 = false;
+	}
+}
+
+bool setter(Tile tile[12][12], Agent agent[4], Font font) {
+	while (System::Update()) {
+		if (Input::KeyEnter.clicked) {
+			return true;
+		}
+
+		// タイルの描画
+		for (int y = 0; y < column; y++) {
+			for (int x = 0; x < row; x++) {
+				tile[x][y].setter_update(font);
+			}
+		}
+
+		// エージェントの描画
+		for (int i = 0; i < 4; i++) {
+			agent[i].setter_update(font, tile);
+		}
 	}
 }

@@ -84,3 +84,45 @@ void Agent::update() {
 Point Agent::getpos() {
 	return Point(x, y);
 }
+
+void Agent::setter_update(Font font, Tile tile[12][12]) {
+	if (state == TEAM1) {
+		circle.draw(Palette::Skyblue);
+		circle.drawFrame(0, 1, Palette::Black);
+	}
+	else if (state == TEAM2) {
+		circle.draw(Palette::Orange);
+		circle.drawFrame(0, 1, Palette::Black);
+	}
+
+	font(id).drawCenter(circle.x - 2, circle.y - 2, Palette::Black);
+
+	// É}ÉEÉXëÄçÏ
+	if (circle.leftClicked) {
+		flag = true;
+	}
+
+	Point set_pos;
+	if (Input::MouseL.released) {
+		if (flag) {
+			for (int y = 0; y < 12; y++) {
+				for (int x = 0; x < 12; x++) {
+					if (tile[x][y].rect.mouseOver) {
+						set_pos = Point(x, y);
+					}
+				}
+			}
+			x = set_pos.x;
+			y = set_pos.y;
+			show_x = set_pos.x;
+			show_y = set_pos.y;
+			circle = Circle(show_x * 40 + margin_x + 20, show_y * 40 + margin_y + 20, 15);
+		}
+		flag = false;
+	}
+
+	if (flag) {
+		circle.x = Mouse::Pos().x;
+		circle.y = Mouse::Pos().y;
+	}
+}

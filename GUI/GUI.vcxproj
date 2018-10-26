@@ -294,6 +294,7 @@
     <ClInclude Include="QR_reader.h" />
     <ClInclude Include="rand_board.h" />
     <ClInclude Include="tcp.h" />
+    <ClInclude Include="Tile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Agent.cpp" />
